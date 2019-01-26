@@ -10,6 +10,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
+import models.User;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -18,6 +21,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import java.io.IOException;
+
+import static java.lang.Math.toIntExact;
 
 class LoginException extends Exception {
     public enum Kind {
@@ -45,7 +50,7 @@ public class LoginFormController {
     @FXML
     public Button logInButton;
 
-    private int logIn() throws Exception {
+    private User logIn() throws Exception {
         String url = "http://localhost:8080/login";
         URL obj = new URL(url);
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -68,24 +73,28 @@ public class LoginFormController {
         in.close();
         System.out.println(response.toString());
 
-        int result = Integer.parseInt(response.toString());
-
-        switch (result) {
-            case -1:
-                throw new LoginException(LoginException.Kind.WRONG_LOGIN);
-            case -2:
-                throw new LoginException(LoginException.Kind.WRONG_PASSWORD);
+        JSONObject jsonObject = (JSONObject) new JSONParser().parse(response.toString());
+        if (!((String) jsonObject.get("error")).isEmpty()) {
+            switch ((Integer.parseInt((String) jsonObject.get("error")))) {
+                case -1:
+                    throw new LoginException(LoginException.Kind.WRONG_LOGIN);
+                case -2:
+                    throw new LoginException(LoginException.Kind.WRONG_PASSWORD);
+            }
         }
 
-        return result;
+        assert !(jsonObject.containsKey("id") && jsonObject.containsKey("name"));
+        return new User(toIntExact(((Long) jsonObject.get("id"))), (String)jsonObject.get("name"));
     }
 
     public void logInClicked() {
         System.out.println("Logging into " + loginField.getText());
 
+        User response = null;
         int id = -1;
         try {
-            id = logIn();
+            response = logIn();
+            id = response.getID();
         } catch (LoginException le) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Wrong login data");
@@ -111,7 +120,8 @@ public class LoginFormController {
             }
             MainWindowController controller = loader.getController();
             System.out.println(id);
-            controller.setUserID(id, passwordField.getText());
+            response.setPassword(passwordField.getText());
+            controller.setUser(response);
 
             assert root != null;
             Scene scene = new Scene(root);

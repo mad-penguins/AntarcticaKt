@@ -17,6 +17,11 @@ public class User {
 
     }
 
+    public User(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     public User(String name, String password) {
         this.name =  name;
         this.password = password;
@@ -29,6 +34,10 @@ public class User {
         }
         assert md != null;
         this.password = javax.xml.bind.DatatypeConverter.printHexBinary(md.digest(password.getBytes()));
+    }
+
+    public int getID() {
+        return this.id;
     }
 
     public String getPassword() {

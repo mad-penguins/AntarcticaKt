@@ -1,11 +1,9 @@
 package dao;
 
 import models.File;
-import models.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import utils.FileDBSessionFactoryUtil;
-import utils.UserDBSessionFactoryUtil;
 
 import java.util.List;
 
