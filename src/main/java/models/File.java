@@ -39,4 +39,16 @@ public class File {
                 ", time='" + time.toString() + "/'" +
                 '}';
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public Timestamp getTime() {
+        return time;
+    }
 }
