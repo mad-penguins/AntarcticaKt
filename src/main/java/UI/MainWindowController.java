@@ -2,11 +2,18 @@ package UI;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import models.File;
 import models.User;
 import services.FileService;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -30,6 +37,7 @@ public class MainWindowController {
         }
     }
 
+    public AnchorPane rootAP;
     public Button addFileButton;
     public TreeTableView<FileRow> filesTree;
     public TreeTableColumn<FileRow, String> fileNameColumn;
@@ -72,7 +80,17 @@ public class MainWindowController {
         filesTree.setShowRoot(false);
     }
 
-    public void addFileClicked(ActionEvent actionEvent) {
+    public void addFileClicked(ActionEvent actionEvent) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/AddFileDialog.fxml"));
+        Parent root = loader.load();
+        AddFileDialogController controller = loader.getController();
 
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setResizable(false);
+        stage.showAndWait();
+
+        System.out.println(controller.filePathInput.getText());
     }
 }
