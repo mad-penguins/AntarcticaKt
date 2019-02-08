@@ -46,7 +46,8 @@
                                                 <TreeTableView fx:id="filesTree" layoutX="-23.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                   <columns>
                                                     <TreeTableColumn fx:id="fileNameColumn" minWidth="200.0" prefWidth="-1.0" text="File" />
-                                                      <TreeTableColumn fx:id="modifiedColumn" minWidth="200.0" prefWidth="-1.0" text="Last modified" />
+                                                      <TreeTableColumn fx:id="createdColumn" minWidth="180.0" prefWidth="-1.0" text="Created" />
+                                                      <TreeTableColumn fx:id="modifiedColumn" minWidth="180.0" prefWidth="-1.0" text="Last modified" />
                                                   </columns>
                                                 </TreeTableView>
                                              </children>

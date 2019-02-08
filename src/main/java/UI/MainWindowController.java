@@ -1,7 +1,6 @@
 package UI;
 
 import javafx.beans.property.SimpleStringProperty;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,7 +14,9 @@ import services.FileService;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -23,15 +24,21 @@ public class MainWindowController {
 
     class FileRow {
         SimpleStringProperty nameProperty;
+        SimpleStringProperty createdProperty;
         SimpleStringProperty lastModifiedProperty;
 
-        FileRow(String name, Timestamp lastModified) {
+        FileRow(String name, Timestamp created, Timestamp lastModified) {
             this.nameProperty = new SimpleStringProperty(name);
+            this.createdProperty = new SimpleStringProperty(created.toString());
             this.lastModifiedProperty = new SimpleStringProperty(lastModified.toString());
         }
 
         SimpleStringProperty getNameProperty() {
             return nameProperty;
+        }
+
+        SimpleStringProperty getCreatedProperty() {
+            return createdProperty;
         }
 
         SimpleStringProperty getLastModifiedProperty() {
@@ -43,6 +50,7 @@ public class MainWindowController {
     public Button addFileButton;
     public TreeTableView<FileRow> filesTree;
     public TreeTableColumn<FileRow, String> fileNameColumn;
+    public TreeTableColumn<FileRow, String> createdColumn;
     public TreeTableColumn<FileRow, String> modifiedColumn;
     public Label usernameLabel;
 
@@ -51,22 +59,41 @@ public class MainWindowController {
     private void updateFilesTable() {
         FileService fileService = new FileService(user.getID(), user.getPassword());
         List<File> userFiles = fileService.getAll();
-        TreeItem<FileRow> root = new TreeItem<>(new FileRow("n", new Timestamp(0)));
-        fileNameColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<FileRow, String> param) -> param.getValue().getValue().getNameProperty());
-        modifiedColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<FileRow, String> param) -> param.getValue().getValue().getLastModifiedProperty());
+
+        TreeItem<FileRow> root = new TreeItem<>(new FileRow("n", new Timestamp(0), new Timestamp(0)));
+        fileNameColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<FileRow, String> param)
+                        -> param.getValue().getValue().getNameProperty()
+        );
+        createdColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<FileRow, String> param)
+                        -> param.getValue().getValue().getCreatedProperty()
+        );
+        modifiedColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<FileRow, String> param)
+                        -> param.getValue().getValue().getLastModifiedProperty()
+        );
 
         HashMap<String, ArrayList<FileRow>> filesByDir = new HashMap<>();
         for (File userFile : userFiles) {
-            System.out.println(userFile.toString());
             if (filesByDir.containsKey(userFile.getPath())) {
-                filesByDir.get(userFile.getPath()).add(new FileRow(userFile.getName(), userFile.getTime()));
+                filesByDir.get(userFile.getPath()).add(
+                        new FileRow(userFile.getName(), userFile.getCreated(), userFile.getModified())
+                );
             } else {
-                filesByDir.put(userFile.getPath(), new ArrayList<>(Collections.singletonList(new FileRow(userFile.getName(), userFile.getTime()))));
+                filesByDir.put(
+                        userFile.getPath(),
+                        new ArrayList<>(
+                                Collections.singletonList(
+                                        new FileRow(userFile.getName(), userFile.getCreated(), userFile.getModified())
+                                )
+                        )
+                );
             }
         }
 
         for (Map.Entry<String, ArrayList<FileRow>> entry : filesByDir.entrySet()) {
-            TreeItem<FileRow> dir = new TreeItem<>(new FileRow(entry.getKey(), new Timestamp(0)));
+            TreeItem<FileRow> dir = new TreeItem<>(new FileRow(entry.getKey(), new Timestamp(0), new Timestamp(0)));
             for (FileRow _file : entry.getValue()) {
                 TreeItem<FileRow> row = new TreeItem<>(_file);
                 dir.getChildren().add(row);
@@ -84,7 +111,7 @@ public class MainWindowController {
         updateFilesTable();
     }
 
-    public void addFileClicked(ActionEvent actionEvent) throws IOException {
+    public void addFileClicked() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/AddFileDialog.fxml"));
         Parent root = loader.load();
         AddFileDialogController controller = loader.getController();
@@ -98,16 +125,17 @@ public class MainWindowController {
         String files_list = controller.filePathInput.getText();
         String[] files_path = files_list.split(",");
 
-        List<File> files;
-
-        for (String path : files_path) {
+        for (String _path : files_path) {
+            String path = _path.trim();
             java.io.File temp_file = new java.io.File(path);
             if (!temp_file.exists()) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Wrong file");
-                alert.setHeaderText("Wrong file");
-                alert.setContentText("File " + path + " does not exist!");
-                alert.showAndWait();
+                if (!path.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Wrong file");
+                    alert.setHeaderText("Wrong file");
+                    alert.setContentText("File " + path + " does not exist!");
+                    alert.showAndWait();
+                }
                 return;
             }
 
@@ -136,7 +164,14 @@ public class MainWindowController {
                 Timestamp.from(
                         Files.readAttributes(
                                 dirFile.toPath(),
-                                BasicFileAttributes.class).creationTime().toInstant()
+                                BasicFileAttributes.class
+                        ).creationTime().toInstant()
+                ),
+                Timestamp.from(
+                        Files.readAttributes(
+                                dirFile.toPath(),
+                                BasicFileAttributes.class
+                        ).lastModifiedTime().toInstant()
                 )
         );
 
@@ -146,6 +181,7 @@ public class MainWindowController {
 
     private void insertCatalogIntoDB(java.io.File catalog) throws IOException {
         java.io.File[] filesInDir = catalog.listFiles();
+        assert filesInDir != null;
         for (java.io.File dirFile : filesInDir) {
             if (dirFile.isDirectory()) {
                 insertCatalogIntoDB(dirFile);
@@ -154,5 +190,26 @@ public class MainWindowController {
                 insertFileIntoDB(dirFile, path);
             }
         }
+    }
+
+    private void downloadFile(File obj) throws IOException {
+        String path = obj.getPath()+'/'+obj.getName();
+        java.io.File file = new java.io.File(path);
+        if (!file.exists()) {
+            if (!file.getParentFile().mkdirs()) {
+                return;
+            }
+            if (!file.createNewFile()) {
+                return;
+            }
+        }
+        Files.write(file.toPath(), obj.getContent());
+
+        BasicFileAttributeView attributes = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView.class);
+        attributes.setTimes(
+                FileTime.from(obj.getCreated().toInstant()),
+                FileTime.from(obj.getModified().toInstant()),
+                FileTime.from(obj.getModified().toInstant())
+        );
     }
 }

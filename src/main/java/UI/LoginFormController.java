@@ -50,6 +50,25 @@ public class LoginFormController {
     @FXML
     public Button logInButton;
 
+    @FXML
+    public void initialize() {
+        loginField.textProperty().addListener(
+                (observable, old_value, new_value) -> {
+                    if(new_value.contains(" ")) {
+                        loginField.setText(old_value);
+                    }
+                }
+        );
+
+        passwordField.textProperty().addListener(
+                (observable, old_value, new_value) -> {
+                    if(new_value.contains(" ")) {
+                        passwordField.setText(old_value);
+                    }
+                }
+        );
+    }
+
     private User logIn() throws Exception {
         String url = "http://localhost:8080/login";
         URL obj = new URL(url);
@@ -71,7 +90,6 @@ public class LoginFormController {
             response.append(inputLine);
         }
         in.close();
-        System.out.println(response.toString());
 
         JSONObject jsonObject = (JSONObject) new JSONParser().parse(response.toString());
         if (!((String) jsonObject.get("error")).isEmpty()) {
@@ -119,7 +137,6 @@ public class LoginFormController {
                 e.printStackTrace();
             }
             MainWindowController controller = loader.getController();
-            System.out.println(id);
             response.setPassword(passwordField.getText());
             controller.setUser(response);
 

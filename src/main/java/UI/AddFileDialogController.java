@@ -1,18 +1,11 @@
 package UI;
 
-import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.io.File;
-import java.util.List;
 
 public class AddFileDialogController {
     public AnchorPane rootAP;
@@ -20,7 +13,7 @@ public class AddFileDialogController {
     public Button OKButton;
     public Button CancelButton;
 
-    public void selectButtonClicked(ActionEvent actionEvent) {
+    public void selectButtonClicked() {
         Stage stage = (Stage) rootAP.getScene().getWindow();
 
         FileChooser fileChooser = new FileChooser();
@@ -31,12 +24,12 @@ public class AddFileDialogController {
 
     }
 
-    public void OKButtonClicked(ActionEvent actionEvent) {
+    public void OKButtonClicked() {
         Stage stage = (Stage) rootAP.getScene().getWindow();
         stage.close();
     }
 
-    public void CancelButtonClicked(ActionEvent actionEvent) {
+    public void CancelButtonClicked() {
         filePathInput.setText("");
         Stage stage = (Stage) rootAP.getScene().getWindow();
         stage.close();

@@ -16,17 +16,20 @@ public class File {
     private byte[] content;
 
     @Basic
-    private Timestamp time;
+    private Timestamp created;
+    @Basic
+    private Timestamp modified;
 
     public File() {
 
     }
 
-    public File(String name, String path, byte[] content, Timestamp time) {
+    public File(String name, String path, byte[] content, Timestamp created, Timestamp modified) {
         this.name =  name;
         this.path = path;
         this.content = content;
-        this.time = time;
+        this.created = created;
+        this.modified = modified;
     }
 
     @Override
@@ -36,7 +39,8 @@ public class File {
                 ", name='" + name + "\'" +
                 ", path='" + path + "\'" +
                 ", content_len = '" + content.length + "\'" +
-                ", time='" + time.toString() + "/'" +
+                ", created='" + created.toString() + "/'" +
+                ", modified='" + modified.toString() + "/'" +
                 '}';
     }
 
@@ -48,7 +52,15 @@ public class File {
         return path;
     }
 
-    public Timestamp getTime() {
-        return time;
+    public Timestamp getCreated() {
+        return created;
+    }
+
+    public byte[] getContent() {
+        return content;
+    }
+
+    public Timestamp getModified() {
+        return modified;
     }
 }
