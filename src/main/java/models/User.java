@@ -1,7 +1,8 @@
 package models;
 
 import javax.persistence.*;
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @Entity
 @Table (name = "users")

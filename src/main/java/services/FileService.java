@@ -18,7 +18,9 @@ public class FileService extends Service<File> {
     }
 
     public void save(File file) {
-        fileDao.save(file);
+        if (fileDao.findByNamePath(file.getName(), file.getPath()) == null) {
+            fileDao.save(file);
+        }
     }
 
     public void update(File file) {

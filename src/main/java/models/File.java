@@ -24,6 +24,11 @@ public class File {
 
     }
 
+    public File(String name, String path) {
+        this.name = name;
+        this.path = path;
+    }
+
     public File(String name, String path, byte[] content, Timestamp created, Timestamp modified) {
         this.name =  name;
         this.path = path;
