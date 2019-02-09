@@ -4,7 +4,7 @@ import models.File;
 import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import utils.FileDBSessionFactoryUtil;
+import utils.SessionFactoryUtil;
 
 import javax.persistence.NoResultException;
 import javax.persistence.criteria.CriteriaQuery;
@@ -22,11 +22,11 @@ public class FileDao extends Dao<File> {
     }
 
     public File findById(int id) {
-        return FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession().get(File.class, id);
+        return SessionFactoryUtil.getSessionFactory(userID, password).openSession().get(File.class, id);
     }
 
     public File findByNamePath(String name, String path) {
-        Session session = FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession();
+        Session session = SessionFactoryUtil.getSessionFactory(userID, password).openSession();
         CriteriaQuery<File> criteriaQuery = session.getCriteriaBuilder().createQuery(File.class);
         Root<File> root = criteriaQuery.from(File.class);
         criteriaQuery.multiselect(root.get("name"), root.get("path"));
@@ -46,7 +46,7 @@ public class FileDao extends Dao<File> {
     }
 
     public void save(File file) {
-        Session session = FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession();
+        Session session = SessionFactoryUtil.getSessionFactory(userID, password).openSession();
         Transaction tx = session.beginTransaction();
         session.save(file);
         tx.commit();
@@ -54,7 +54,7 @@ public class FileDao extends Dao<File> {
     }
 
     public void update(File file) {
-        Session session = FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession();
+        Session session = SessionFactoryUtil.getSessionFactory(userID, password).openSession();
         Transaction tx = session.beginTransaction();
         session.update(file);
         tx.commit();
@@ -62,7 +62,7 @@ public class FileDao extends Dao<File> {
     }
 
     public void delete(File file) {
-        Session session = FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession();
+        Session session = SessionFactoryUtil.getSessionFactory(userID, password).openSession();
         Transaction tx = session.beginTransaction();
         session.delete(file);
         tx.commit();
@@ -70,6 +70,7 @@ public class FileDao extends Dao<File> {
     }
 
     public List<File> getAll() {
-        return (List<File>) FileDBSessionFactoryUtil.getSessionFactory(userID, password).openSession().createQuery("from File").list();
+        return (List<File>) SessionFactoryUtil.getSessionFactory(userID, password).openSession().createQuery("from File").list();
     }
+
 }

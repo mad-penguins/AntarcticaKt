@@ -1,16 +1,18 @@
 package utils;
 
 import models.File;
+import models.Package;
+import models.Repository;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 
 import java.util.Properties;
 
-public class FileDBSessionFactoryUtil {
+public class SessionFactoryUtil {
     private static SessionFactory sessionFactory;
 
-    private FileDBSessionFactoryUtil() {
+    private SessionFactoryUtil() {
 
     }
 
@@ -27,6 +29,8 @@ public class FileDBSessionFactoryUtil {
 
                 Configuration configuration = new Configuration().addProperties(prop);
                 configuration.addAnnotatedClass(File.class);
+                configuration.addAnnotatedClass(Package.class);
+                configuration.addAnnotatedClass(Repository.class);
                 StandardServiceRegistryBuilder builder =
                         new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
                 sessionFactory = configuration.buildSessionFactory(builder.build());
