@@ -1,5 +1,7 @@
 package models;
 
+import utils.PackageManagerUtil;
+
 import javax.persistence.*;
 import java.util.List;
 
@@ -19,6 +21,17 @@ public class Repository {
 
     public Repository () {
 
+    }
+
+    public static Repository Default() {
+        return new Repository(2, "Default", "no_url", PackageManagerUtil.getPackageManagerName());
+    }
+
+    public Repository(int id, String name, String url, String manager) {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.manager = manager;
     }
 
     public Repository(String name, String url, String manager) {
@@ -65,11 +78,6 @@ public class Repository {
 
     @Override
     public String toString() {
-        return "models.User" +
-                "id=" + id +
-                ", name='" + name + "\'" +
-                ", url='" + url + "\'" +
-                ", package manager='" + manager + "\'" +
-                '}';
+        return name;
     }
 }

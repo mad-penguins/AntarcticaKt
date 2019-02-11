@@ -17,6 +17,10 @@ public class RepositoryService extends Service<Repository> {
         return repoDao.findById(id);
     }
 
+    public Repository find(String url) {
+        return repoDao.findbyURL(url);
+    }
+
     public void save(Repository repo) {
         repoDao.save(repo);
     }

@@ -51,7 +51,9 @@ public class PackageDao extends Dao<Package> {
     }
 
     public List<Package> getAll() {
-        return (List<Package>) SessionFactoryUtil.getSessionFactory(userID, password).openSession().createQuery("from Package").list();
+        return (List<Package>)
+                SessionFactoryUtil.getSessionFactory(userID, password)
+                        .openSession().createQuery("from Package").list();
     }
 
     

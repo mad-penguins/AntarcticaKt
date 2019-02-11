@@ -1,7 +1,6 @@
 package UI;
 
 import javafx.beans.property.SimpleStringProperty;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -11,9 +10,11 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import models.File;
 import models.Package;
+import models.Repository;
 import models.User;
 import services.FileService;
 import services.PackageService;
+import services.RepositoryService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +39,15 @@ public class MainWindowController {
     public AnchorPane rootAP;
     public Label usernameLabel;
 
+    private void showInvalidPathAlert(String path) {
+        if (!path.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Wrong file");
+            alert.setHeaderText("Wrong file");
+            alert.setContentText("File " + path + " does not exist!");
+            alert.showAndWait();
+        }
+    }
 
     // files logic
     class FileRow {
@@ -47,8 +57,16 @@ public class MainWindowController {
 
         FileRow(String name, Timestamp created, Timestamp lastModified) {
             this.nameProperty = new SimpleStringProperty(name);
-            this.createdProperty = new SimpleStringProperty(created.toString());
-            this.lastModifiedProperty = new SimpleStringProperty(lastModified.toString());
+            this.createdProperty = new SimpleStringProperty(
+                    created.equals(new Timestamp(0))
+                            ? ""
+                            : created.toString()
+            );
+            this.lastModifiedProperty = new SimpleStringProperty(
+                    lastModified.equals(new Timestamp(0))
+                            ? ""
+                            : lastModified.toString()
+            );
         }
 
         SimpleStringProperty getNameProperty() {
@@ -130,19 +148,16 @@ public class MainWindowController {
         stage.showAndWait();
 
         String files_list = controller.filePathInput.getText();
+        if (files_list.isEmpty()) {
+            return;
+        }
         String[] files_path = files_list.split(",");
 
         for (String _path : files_path) {
             String path = _path.trim();
             java.io.File temp_file = new java.io.File(path);
             if (!temp_file.exists()) {
-                if (!path.isEmpty()) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Wrong file");
-                    alert.setHeaderText("Wrong file");
-                    alert.setContentText("File " + path + " does not exist!");
-                    alert.showAndWait();
-                }
+                showInvalidPathAlert(path);
                 return;
             }
 
@@ -158,12 +173,13 @@ public class MainWindowController {
         }
     }
 
-    private void insertFileIntoDB(java.io.File dirFile, String path) throws IOException {
+    private File insertFileIntoDB(java.io.File dirFile, String path) throws IOException {
         String name = path.substring(path.lastIndexOf('/')+1);
         String location = path.substring(0, path.lastIndexOf('/'));
 
         byte[] content = Files.readAllBytes(dirFile.toPath());
 
+        PackageService packageService = new PackageService(user.getID(), user.getPassword());
         File file = new File(
                 name,
                 location,
@@ -181,22 +197,28 @@ public class MainWindowController {
                         ).lastModifiedTime().toInstant()
                 )
         );
+        file.setPackage(packageService.find(1));
 
         FileService fileService = new FileService(user.getID(), user.getPassword());
         fileService.save(file);
+
+        return file;
     }
 
-    private void insertCatalogIntoDB(java.io.File catalog) throws IOException {
+    private List<File> insertCatalogIntoDB(java.io.File catalog) throws IOException {
         java.io.File[] filesInDir = catalog.listFiles();
         assert filesInDir != null;
+
+        List<File> files = new ArrayList<>();
         for (java.io.File dirFile : filesInDir) {
             if (dirFile.isDirectory()) {
-                insertCatalogIntoDB(dirFile);
+                files.addAll(insertCatalogIntoDB(dirFile));
             } else if (dirFile.isFile()) {
                 String path = dirFile.getAbsolutePath();
-                insertFileIntoDB(dirFile, path);
+                files.add(insertFileIntoDB(dirFile, path));
             }
         }
+        return files;
     }
 
     private void downloadFile(File obj) throws IOException {
@@ -230,7 +252,11 @@ public class MainWindowController {
         PackageRow(String name, String repository, List<File> configsList) {
             this.nameProperty = new SimpleStringProperty(name);
             this.repositoryProperty = new SimpleStringProperty(repository);
-            this.configsListProperty = new SimpleStringProperty(configsList.toString());
+            this.configsListProperty = new SimpleStringProperty(
+                    configsList.size() == 0
+                            ? ""
+                            : configsList.toString()
+            );
         }
 
         SimpleStringProperty getNameProperty() {
@@ -301,12 +327,73 @@ public class MainWindowController {
         packagesTree.setShowRoot(false);
     }
 
-    public void addPackageClicked(ActionEvent actionEvent) {
+    public void addPackageClicked() throws Exception {
+        RepositoryService repositoryService = new RepositoryService(user.getID(), user.getPassword());
+        if (repositoryService.find(2).getManager().equals("no_manager")) { // on fresh installation
+            repositoryService.update(Repository.Default());
+        }
 
-    }
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/AddPackageDialog.fxml"));
+        Parent root = loader.load();
+        AddPackageDialogController controller = loader.getController();
 
-    private void insertPackageIntoDB() {
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setResizable(false);
+        stage.showAndWait();
 
+        if (controller.nameInput.getText().isEmpty()) {
+            return;
+        }
+
+        List<File> configs = new ArrayList<>();
+        String files_list = controller.configsPathInput.getText();
+        if (!files_list.isEmpty()) {
+            String[] files_path = files_list.split(",");
+
+            for (String _path : files_path) {
+                String path = _path.trim();
+                java.io.File temp_file = new java.io.File(path);
+                if (!temp_file.exists()) {
+                    showInvalidPathAlert(path);
+                    return;
+                }
+
+                if (temp_file.isFile()) {
+                    configs.add(insertFileIntoDB(temp_file, path));
+                    updateFilesTable();
+                }
+
+                if (temp_file.isDirectory()) {
+                    configs.addAll(insertCatalogIntoDB(temp_file));
+                    updateFilesTable();
+                }
+            }
+        }
+
+        Repository repository = repositoryService.find(controller.repositoryInput.getValue().getUrl());
+
+        if (repository == null) {
+            repositoryService.save(controller.repositoryInput.getValue());
+            repository = repositoryService.find(controller.repositoryInput.getValue().getUrl());
+        }
+
+        Package pkg = new Package(
+                controller.nameInput.getText().trim(),
+                repository
+        );
+        pkg.setFiles(configs);
+
+        PackageService packageService = new PackageService(user.getID(), user.getPassword());
+        packageService.save(pkg);
+        updatePackagesTable();
+
+        FileService fileService = new FileService(user.getID(), user.getPassword());
+        for (File config : configs) {
+            config.setPackage(pkg);
+            fileService.update(config);
+        }
     }
 
     private void installPackage(Package pkg) {

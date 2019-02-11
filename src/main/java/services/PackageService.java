@@ -35,6 +35,8 @@ public class PackageService extends Service<Package> {
     }
 
     public List<Package> getAll() {
-        return packageDao.getAll();
+        List<Package> all = packageDao.getAll();
+        all.remove(0);
+        return all;
     }
 }

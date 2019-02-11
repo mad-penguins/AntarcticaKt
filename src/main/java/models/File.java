@@ -67,15 +67,7 @@ public class File {
 
     @Override
     public String toString() {
-        return "models.File" +
-                "id=" + id +
-                ", name='" + name + "\'" +
-                ", path='" + path + "\'" +
-                ", content_len = '" + content.length + "\'" +
-                ", created='" + created.toString() + "/'" +
-                ", modified='" + modified.toString() + "/'" +
-                ", package='" + _package.getName() + "/'" +
-                '}';
+        return path + "/" + name;
     }
 
     public int getId() {

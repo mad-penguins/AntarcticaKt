@@ -39,13 +39,9 @@ class LoginException extends Exception {
 }
 
 public class LoginFormController {
-    @FXML
+
     public TextField loginField;
-
-    @FXML
     public PasswordField passwordField;
-
-    @FXML
     public Button logInButton;
 
     @FXML
