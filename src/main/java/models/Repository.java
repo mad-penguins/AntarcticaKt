@@ -4,7 +4,7 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table (name = "repos")
+@Table (name = "repositories")
 public class Repository {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

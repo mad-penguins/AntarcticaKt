@@ -1,6 +1,7 @@
 package UI;
 
 import javafx.beans.property.SimpleStringProperty;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -9,8 +10,10 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import models.File;
+import models.Package;
 import models.User;
 import services.FileService;
+import services.PackageService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +25,21 @@ import java.util.*;
 
 public class MainWindowController {
 
+    private User user;
+
+    void setUser(User user) {
+        this.user = user;
+        usernameLabel.setText("Files of " + user.getName());
+
+        updateFilesTable();
+        updatePackagesTable();
+    }
+
+    public AnchorPane rootAP;
+    public Label usernameLabel;
+
+
+    // files logic
     class FileRow {
         SimpleStringProperty nameProperty;
         SimpleStringProperty createdProperty;
@@ -46,15 +64,11 @@ public class MainWindowController {
         }
     }
 
-    public AnchorPane rootAP;
     public Button addFileButton;
     public TreeTableView<FileRow> filesTree;
     public TreeTableColumn<FileRow, String> fileNameColumn;
     public TreeTableColumn<FileRow, String> createdColumn;
     public TreeTableColumn<FileRow, String> modifiedColumn;
-    public Label usernameLabel;
-
-    private User user;
 
     private void updateFilesTable() {
         FileService fileService = new FileService(user.getID(), user.getPassword());
@@ -102,13 +116,6 @@ public class MainWindowController {
         }
         filesTree.setRoot(root);
         filesTree.setShowRoot(false);
-    }
-
-    void setUser(User user) {
-        this.user = user;
-        usernameLabel.setText("Files of " + user.getName());
-
-        updateFilesTable();
     }
 
     public void addFileClicked() throws IOException {
@@ -211,5 +218,98 @@ public class MainWindowController {
                 FileTime.from(obj.getModified().toInstant()),
                 FileTime.from(obj.getModified().toInstant())
         );
+    }
+
+
+    // packages logic
+    class PackageRow {
+        SimpleStringProperty nameProperty;
+        SimpleStringProperty repositoryProperty;
+        SimpleStringProperty configsListProperty;
+
+        PackageRow(String name, String repository, List<File> configsList) {
+            this.nameProperty = new SimpleStringProperty(name);
+            this.repositoryProperty = new SimpleStringProperty(repository);
+            this.configsListProperty = new SimpleStringProperty(configsList.toString());
+        }
+
+        SimpleStringProperty getNameProperty() {
+            return nameProperty;
+        }
+
+        SimpleStringProperty getRepositoryProperty() {
+            return repositoryProperty;
+        }
+
+        SimpleStringProperty getLastConfigsListProperty() {
+            return configsListProperty;
+        }
+    }
+
+    public Button addPackageButton;
+    public TreeTableView<PackageRow> packagesTree;
+    public TreeTableColumn<PackageRow, String> packageNameColumn;
+    public TreeTableColumn<PackageRow, String> repositoryColumn;
+    public TreeTableColumn<PackageRow, String> configsListColumn;
+
+    private void updatePackagesTable() {
+        PackageService packageService = new PackageService(user.getID(), user.getPassword());
+        List<Package> userPackages = packageService.getAll();
+
+        TreeItem<PackageRow> root = new TreeItem<>(new PackageRow("", "", new ArrayList<>()));
+        packageNameColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<PackageRow, String> param)
+                        -> param.getValue().getValue().getNameProperty()
+        );
+        repositoryColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<PackageRow, String> param)
+                        -> param.getValue().getValue().getRepositoryProperty()
+        );
+        configsListColumn.setCellValueFactory(
+                (TreeTableColumn.CellDataFeatures<PackageRow, String> param)
+                        -> param.getValue().getValue().getLastConfigsListProperty()
+        );
+
+        HashMap<String, ArrayList<PackageRow>> packagesByRepository = new HashMap<>();
+        for (Package userPackage : userPackages) {
+            if (packagesByRepository.containsKey(userPackage.getRepository().getName())) {
+                packagesByRepository.get(userPackage.getRepository().getName()).add(
+                        new PackageRow(userPackage.getName(), userPackage.getRepository().getName(), userPackage.getFiles())
+                );
+            } else {
+                packagesByRepository.put(
+                        userPackage.getRepository().getName(),
+                        new ArrayList<>(
+                                Collections.singletonList(
+                                        new PackageRow(userPackage.getName(), userPackage.getRepository().getName(), userPackage.getFiles())
+                                )
+                        )
+                );
+            }
+        }
+
+        for (Map.Entry<String, ArrayList<PackageRow>> entry : packagesByRepository.entrySet()) {
+            TreeItem<PackageRow> dir = new TreeItem<>(new PackageRow(entry.getKey(), "", new ArrayList<>()));
+            for (PackageRow _package : entry.getValue()) {
+                TreeItem<PackageRow> row = new TreeItem<>(_package);
+                dir.getChildren().add(row);
+            }
+            root.getChildren().add(dir);
+        }
+
+        packagesTree.setRoot(root);
+        packagesTree.setShowRoot(false);
+    }
+
+    public void addPackageClicked(ActionEvent actionEvent) {
+
+    }
+
+    private void insertPackageIntoDB() {
+
+    }
+
+    private void installPackage(Package pkg) {
+
     }
 }

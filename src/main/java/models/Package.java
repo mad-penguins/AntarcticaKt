@@ -30,6 +30,10 @@ public class Package {
         this.files = new ArrayList<>();
     }
 
+    public int getId() {
+        return id;
+    }
+
     public String getName() {
         return name;
     }
