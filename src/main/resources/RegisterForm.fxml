@@ -11,9 +11,9 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="160.0" prefWidth="350.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.LoginFormController">
+<AnchorPane fx:id="rootAP" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="195.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.RegisterFormController">
    <children>
-      <TitledPane animated="false" layoutX="-47.0" layoutY="-30.0" text="Antarctica Login" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <TitledPane animated="false" layoutX="-47.0" layoutY="-30.0" text="Antarctica Registration" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="170.0" prefWidth="200.0">
                <children>
@@ -25,13 +25,19 @@
                         <HBox prefHeight="100.0" prefWidth="200.0">
                            <children>
                               <Label prefHeight="24.0" prefWidth="85.0" text="Login" />
-                              <TextField fx:id="loginField" prefHeight="25.0" prefWidth="250.0" />
+                              <TextField fx:id="loginField" prefHeight="25.0" prefWidth="270.0" />
+                           </children>
+                        </HBox>
+                        <HBox layoutX="25.0" layoutY="22.0" prefHeight="100.0" prefWidth="200.0">
+                           <children>
+                              <Label prefHeight="24.0" prefWidth="85.0" text="Display name" />
+                              <TextField fx:id="nameField" prefHeight="25.0" prefWidth="270.0" />
                            </children>
                         </HBox>
                         <HBox prefHeight="100.0" prefWidth="200.0">
                            <children>
                               <Label prefHeight="24.0" prefWidth="85.0" text="Password" />
-                              <PasswordField fx:id="passwordField" prefHeight="25.0" prefWidth="250.0" />
+                              <PasswordField fx:id="passwordField" prefHeight="25.0" prefWidth="270.0" />
                            </children>
                         </HBox>
                         <HBox prefHeight="100.0" prefWidth="200.0">
@@ -40,8 +46,8 @@
                                  <children>
                                     <ButtonBar prefHeight="40.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                       <buttons>
-                                         <Button fx:id="registerButton" mnemonicParsing="false" onAction="#registerClicked" text="Register" />
-                                        <Button fx:id="logInButton" defaultButton="true" mnemonicParsing="false" onAction="#logInClicked" prefWidth="100.0" text="Log in" textAlignment="RIGHT" />
+                                          <Button fx:id="cancelButton" cancelButton="true" mnemonicParsing="false" onAction="#cancelClicked" text="Cancel" />
+                                         <Button fx:id="registerButton" defaultButton="true" mnemonicParsing="false" onAction="#registerClicked" text="Register" />
                                       </buttons>
                                     </ButtonBar>
                                  </children>

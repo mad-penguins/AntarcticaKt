@@ -1,5 +1,6 @@
 package UI;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -8,6 +9,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import models.User;
 import org.json.simple.JSONObject;
@@ -69,7 +71,7 @@ public class LoginFormController {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
         con.setRequestMethod("POST");
-        String urlParameters = "name=" + loginField.getText() + "&password=" + passwordField.getText();
+        String urlParameters = "login=" + loginField.getText().trim() + "&password=" + passwordField.getText().trim();
         con.setDoOutput(true);
         DataOutputStream wr = new DataOutputStream(con.getOutputStream());
         wr.writeBytes(urlParameters);
@@ -96,7 +98,7 @@ public class LoginFormController {
         }
 
         assert !(jsonObject.containsKey("id") && jsonObject.containsKey("name"));
-        return new User(toIntExact(((Long) jsonObject.get("id"))), (String)jsonObject.get("name"));
+        return new User(toIntExact(((Long) jsonObject.get("id"))), (String)jsonObject.get("login"), (String)jsonObject.get("name"));
     }
 
     public void logInClicked() {
@@ -140,6 +142,72 @@ public class LoginFormController {
             Stage stage = (Stage) logInButton.getScene().getWindow();
             stage.setScene(scene);
             stage.show();
+        }
+    }
+
+    private void register(String login, String name, String password) throws Exception {
+        String url = "http://localhost:8080/register";
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+        con.setRequestMethod("POST");
+        String urlParameters = "login=" + login.trim() + "&name=" + name.trim() + "&password=" + password.trim();
+        con.setDoOutput(true);
+        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+        wr.writeBytes(urlParameters);
+        wr.flush();
+        wr.close();
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+
+        JSONObject jsonObject = (JSONObject) new JSONParser().parse(response.toString());
+        if (!((String) jsonObject.get("error")).isEmpty()) {
+            switch ((Integer.parseInt((String) jsonObject.get("error")))) {
+                case -1:
+                    throw new RegisterException(RegisterException.Kind.ALREADY_REGISTERED);
+            }
+        }
+    }
+
+
+    public void registerClicked() throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/RegisterForm.fxml"));
+        Parent root = loader.load();
+        RegisterFormController controller = loader.getController();
+
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setResizable(false);
+        stage.showAndWait();
+
+        String login = controller.loginField.getText();
+        String name = controller.nameField.getText();
+        String password = controller.passwordField.getText();
+        if (login.isEmpty() || name.isEmpty() || password.isEmpty()) {
+            return;
+        }
+
+        try {
+            register(login, name, password);
+        } catch (RegisterException re) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error while registration");
+            switch (re.getKind()) {
+                case ALREADY_REGISTERED:
+                    alert.setHeaderText("User " + name + " is already registered!");
+                    break;
+            }
+            alert.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
