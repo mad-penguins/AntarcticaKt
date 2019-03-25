@@ -10,6 +10,6 @@ abstract class Service<Model> {
 
     abstract fun delete(obj: Model)
 
-    abstract fun getAll() : List<Model>?
+    abstract fun getAll(): List<Model>?
 
 }

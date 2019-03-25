@@ -8,6 +8,7 @@ import javafx.scene.control.*
 import javafx.scene.layout.AnchorPane
 import javafx.stage.Modality
 import javafx.stage.Stage
+import javafx.util.Callback
 import models.File
 import models.Package
 import models.Repository
@@ -36,6 +37,7 @@ class MainWindowController {
     lateinit var fileNameColumn: TreeTableColumn<FileRow, String>
     lateinit var createdColumn: TreeTableColumn<FileRow, String>
     lateinit var modifiedColumn: TreeTableColumn<FileRow, String>
+    lateinit var deleteColumn: TreeTableColumn<FileRow, String>
 
     lateinit var addPackageButton: Button
     lateinit var packagesTree: TreeTableView<PackageRow>
@@ -62,51 +64,79 @@ class MainWindowController {
     }
 
     // files logic
-    inner class FileRow(name: String, created: Timestamp, lastModified: Timestamp) {
-        var nameProperty: SimpleStringProperty = SimpleStringProperty(name)
-        var createdProperty: SimpleStringProperty = SimpleStringProperty(
+    inner class FileRow(var id: List<Int>, name: String, created: Timestamp, lastModified: Timestamp) {
+        var nameProperty = SimpleStringProperty(name)
+        var createdProperty = SimpleStringProperty(
                 if (created.equals(Timestamp(0)))
                     ""
                 else
                     created.toString()
         )
-        var lastModifiedProperty: SimpleStringProperty = SimpleStringProperty(
+        var lastModifiedProperty = SimpleStringProperty(
                 if (lastModified.equals(Timestamp(0)))
                     ""
                 else
                     lastModified.toString()
         )
-
     }
 
     private fun updateFilesTable() {
         val fileService = FileService(user.id, user.password)
         val userFiles = fileService.getAll()
 
-        val root = TreeItem(FileRow("n", Timestamp(0), Timestamp(0)))
+        val root = TreeItem(FileRow(listOf(-1), "n", Timestamp(0), Timestamp(0)))
         fileNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.nameProperty }
         createdColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.createdProperty }
         modifiedColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.lastModifiedProperty }
+
+        val cellFactory = Callback<TreeTableColumn<FileRow, String>, TreeTableCell<FileRow, String>> {
+            object : TreeTableCell<FileRow, String>() {
+                var btn = Button("X")
+
+                public override fun updateItem(item: String?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    if (empty) {
+                        graphic = null
+                        text = null
+                    } else {
+                        btn.setOnAction {
+                            for (id in treeTableRow.item.id) {
+                                fileService.delete(fileService.find(id)!!)
+                            }
+                            updateFilesTable()
+                        }
+                        graphic = btn
+                        text = null
+                    }
+                }
+            }
+        }
+
+        deleteColumn.cellFactory = cellFactory
 
         val filesByDir = HashMap<String, ArrayList<FileRow>>()
         for (userFile in userFiles) {
             if (filesByDir.containsKey(userFile.path)) {
                 filesByDir[userFile.path]!!.add(
-                        FileRow(userFile.name, userFile.created!!, userFile.modified!!)
+                        FileRow(listOf(userFile.id), userFile.name, userFile.created!!, userFile.modified!!)
                 )
             } else {
                 filesByDir[userFile.path!!] = ArrayList(
-                        listOf(FileRow(userFile.name, userFile.created!!, userFile.modified!!))
+                        listOf(FileRow(listOf(userFile.id), userFile.name, userFile.created!!, userFile.modified!!))
                 )
             }
         }
 
         for ((key, value) in filesByDir) {
-            val dir = TreeItem(FileRow(key, Timestamp(0), Timestamp(0)))
+            val children = mutableListOf<TreeItem<FileRow>>()
+            val ids = mutableListOf<Int>()
             for (_file in value) {
                 val row = TreeItem(_file)
-                dir.children.add(row)
+                ids.addAll(_file.id)
+                children.add(row)
             }
+            val dir = TreeItem(FileRow(ids, key, Timestamp(0), Timestamp(0)))
+            dir.children.addAll(children)
             root.children.add(dir)
         }
         filesTree.root = root
@@ -225,9 +255,9 @@ class MainWindowController {
 
     // packages logic
     inner class PackageRow(name: String, repository: String, configsList: List<File>) {
-        var nameProperty: SimpleStringProperty = SimpleStringProperty(name)
-        var repositoryProperty: SimpleStringProperty = SimpleStringProperty(repository)
-        var lastConfigsListProperty: SimpleStringProperty = SimpleStringProperty(
+        var nameProperty = SimpleStringProperty(name)
+        var repositoryProperty = SimpleStringProperty(repository)
+        var lastConfigsListProperty = SimpleStringProperty(
                 if (configsList.isEmpty())
                     ""
                 else
