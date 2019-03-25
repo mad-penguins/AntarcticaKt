@@ -32,19 +32,6 @@ class MainWindowController {
     lateinit var rootAP: AnchorPane
     lateinit var usernameLabel: Label
 
-    lateinit var addFileButton: Button
-    lateinit var filesTree: TreeTableView<FileRow>
-    lateinit var fileNameColumn: TreeTableColumn<FileRow, String>
-    lateinit var createdColumn: TreeTableColumn<FileRow, String>
-    lateinit var modifiedColumn: TreeTableColumn<FileRow, String>
-    lateinit var deleteColumn: TreeTableColumn<FileRow, String>
-
-    lateinit var addPackageButton: Button
-    lateinit var packagesTree: TreeTableView<PackageRow>
-    lateinit var packageNameColumn: TreeTableColumn<PackageRow, String>
-    lateinit var repositoryColumn: TreeTableColumn<PackageRow, String>
-    lateinit var configsListColumn: TreeTableColumn<PackageRow, String>
-
     internal fun setUser(user: User) {
         this.user = user
         usernameLabel.text = "Files of " + user.name
@@ -63,7 +50,16 @@ class MainWindowController {
         }
     }
 
+
     // files logic
+
+    lateinit var addFileButton: Button
+    lateinit var filesTree: TreeTableView<FileRow>
+    lateinit var fileNameColumn: TreeTableColumn<FileRow, String>
+    lateinit var createdColumn: TreeTableColumn<FileRow, String>
+    lateinit var modifiedColumn: TreeTableColumn<FileRow, String>
+    lateinit var deleteFileColumn: TreeTableColumn<FileRow, String>
+
     inner class FileRow(var id: List<Int>, name: String, created: Timestamp, lastModified: Timestamp) {
         var nameProperty = SimpleStringProperty(name)
         var createdProperty = SimpleStringProperty(
@@ -104,6 +100,7 @@ class MainWindowController {
                                 fileService.delete(fileService.find(id)!!)
                             }
                             updateFilesTable()
+                            updatePackagesTable()
                         }
                         graphic = btn
                         text = null
@@ -112,7 +109,7 @@ class MainWindowController {
             }
         }
 
-        deleteColumn.cellFactory = cellFactory
+        deleteFileColumn.cellFactory = cellFactory
 
         val filesByDir = HashMap<String, ArrayList<FileRow>>()
         for (userFile in userFiles) {
@@ -254,7 +251,15 @@ class MainWindowController {
 
 
     // packages logic
-    inner class PackageRow(name: String, repository: String, configsList: List<File>) {
+
+    lateinit var addPackageButton: Button
+    lateinit var packagesTree: TreeTableView<PackageRow>
+    lateinit var packageNameColumn: TreeTableColumn<PackageRow, String>
+    lateinit var repositoryColumn: TreeTableColumn<PackageRow, String>
+    lateinit var configsListColumn: TreeTableColumn<PackageRow, String>
+    lateinit var deletePackageColumn: TreeTableColumn<PackageRow, String>
+
+    inner class PackageRow(var id: List<Int>, name: String, repository: String, configsList: List<File>) {
         var nameProperty = SimpleStringProperty(name)
         var repositoryProperty = SimpleStringProperty(repository)
         var lastConfigsListProperty = SimpleStringProperty(
@@ -270,30 +275,60 @@ class MainWindowController {
         val packageService = PackageService(user.id, user.password)
         val userPackages = packageService.getAll()
 
-        val root = TreeItem(PackageRow("", "", ArrayList()))
+        val root = TreeItem(PackageRow(listOf(-1),"", "", ArrayList()))
         packageNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.nameProperty }
         repositoryColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.repositoryProperty }
         configsListColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.lastConfigsListProperty }
 
+        val cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
+            object : TreeTableCell<PackageRow, String>() {
+                var btn = Button("X")
+
+                public override fun updateItem(item: String?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    if (empty) {
+                        graphic = null
+                        text = null
+                    } else {
+                        btn.setOnAction {
+                            for (id in treeTableRow.item.id) {
+                                packageService.delete(packageService.find(id)!!)
+                            }
+                            updatePackagesTable()
+                            updateFilesTable()
+                        }
+                        graphic = btn
+                        text = null
+                    }
+                }
+            }
+        }
+
+        deletePackageColumn.cellFactory = cellFactory
+
         val packagesByRepository = HashMap<String, ArrayList<PackageRow>>()
-        for (userPackage in userPackages) {
+        for (userPackage in userPackages!!) {
             if (packagesByRepository.containsKey(userPackage.repository!!.name)) {
                 packagesByRepository[userPackage.repository!!.name]!!.add(
-                        PackageRow(userPackage.name!!, userPackage.repository!!.name, userPackage.files!!)
+                        PackageRow(listOf(userPackage.id), userPackage.name!!, userPackage.repository!!.name, userPackage.files!!)
                 )
             } else {
                 packagesByRepository[userPackage.repository!!.name] = ArrayList(
-                        listOf(PackageRow(userPackage.name!!, userPackage.repository!!.name, userPackage.files!!))
+                        listOf(PackageRow(listOf(userPackage.id), userPackage.name!!, userPackage.repository!!.name, userPackage.files!!))
                 )
             }
         }
 
         for ((key, value) in packagesByRepository) {
-            val dir = TreeItem(PackageRow(key, "", ArrayList()))
+            val children = mutableListOf<TreeItem<PackageRow>>()
+            val ids = mutableListOf<Int>()
             for (_package in value) {
                 val row = TreeItem(_package)
-                dir.children.add(row)
+                children.add(row)
+                ids.addAll(_package.id)
             }
+            val dir = TreeItem(PackageRow(ids, key, "", ArrayList()))
+            dir.children.addAll(children)
             root.children.add(dir)
         }
 
@@ -335,14 +370,22 @@ class MainWindowController {
                     return
                 }
 
-                if (tempFile.isFile) {
-                    configs.add(insertFileIntoDB(tempFile, path))
-                    updateFilesTable()
-                }
+                val filesService = FileService(user.id, user.password)
+                val name = path.substring(path.lastIndexOf('/') + 1)
+                val location = path.substring(0, path.lastIndexOf('/'))
+                val entry = filesService.find(name, location)
+                if (entry != null) { // TODO: fix error while adding a package with already added config file
+                    configs.add(entry)
+                } else {
+                    if (tempFile.isFile) {
+                        configs.add(insertFileIntoDB(tempFile, path))
+                        updateFilesTable()
+                    }
 
-                if (tempFile.isDirectory) {
-                    configs.addAll(insertCatalogIntoDB(tempFile))
-                    updateFilesTable()
+                    if (tempFile.isDirectory) {
+                        configs.addAll(insertCatalogIntoDB(tempFile))
+                        updateFilesTable()
+                    }
                 }
             }
         }

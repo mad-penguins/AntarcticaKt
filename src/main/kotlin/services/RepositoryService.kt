@@ -32,6 +32,6 @@ class RepositoryService(userID: Int, password: String) : Service<Repository>() {
     }
 
     override fun getAll(): List<Repository>? {
-        return repoDao.all
+        return repoDao.all?.drop(1)
     }
 }

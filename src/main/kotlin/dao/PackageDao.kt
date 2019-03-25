@@ -2,11 +2,12 @@ package dao
 
 import models.File
 import models.Package
+import org.hibernate.HibernateException
 import utils.SessionFactoryUtil
 
 class PackageDao(private val userID: Int, private val password: String) : Dao<Package>() {
 
-    override val all: List<Package>
+    override val all: List<Package>?
         get() = SessionFactoryUtil.getSessionFactory(userID, password)
                 ?.openSession()?.createQuery("from Package")?.list() as List<Package>
 
@@ -17,7 +18,7 @@ class PackageDao(private val userID: Int, private val password: String) : Dao<Pa
     override fun save(obj: Package) {
         val session = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
         val tx = session?.beginTransaction()
-        session?.save(obj)
+        session?.saveOrUpdate(obj)
         tx?.commit()
         session?.close()
     }
@@ -32,15 +33,21 @@ class PackageDao(private val userID: Int, private val password: String) : Dao<Pa
 
     override fun delete(obj: Package) {
         val session = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
-        val tx = session.beginTransaction()
-        session.delete(obj)
-        tx.commit()
-        session.close()
+        try {
+            val tx = session.beginTransaction()
+            val query = session.createQuery("delete from Package p where p.id=:i")
+            query.setParameter("i", obj.id).executeUpdate()
+            tx.commit()
+            session.close()
+        } catch (he: HibernateException) {
+            session.transaction.rollback()
+            he.printStackTrace()
+        } finally {
+            session.close()
+        }
     }
 
     fun findFileById(id: Int): File {
         return SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(File::class.java, id)
     }
-
-
 }

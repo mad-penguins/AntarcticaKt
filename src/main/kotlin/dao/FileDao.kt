@@ -7,10 +7,8 @@ import org.hibernate.NonUniqueResultException
 import utils.SessionFactoryUtil
 import javax.persistence.NoResultException
 
-@Suppress("SyntaxError")
 class FileDao(private val userID: Int, private val password: String) : Dao<File>() {
 
-    @Suppress("SyntaxError")
     override val all: List<File>
         get() = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()?.createQuery("from File")?.list() as List<File>
 
@@ -22,7 +20,7 @@ class FileDao(private val userID: Int, private val password: String) : Dao<File>
         val session = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
         val criteriaQuery = session?.criteriaBuilder?.createQuery(File::class.java)
         val root = criteriaQuery?.from(File::class.java)
-        criteriaQuery?.multiselect(root?.get<File>("name"), root?.get<File>("path"))
+        criteriaQuery?.multiselect(root?.get<File>("id"), root?.get<File>("name"), root?.get<File>("path"), root?.get<File>("content"))
         criteriaQuery?.where(
                 session.criteriaBuilder?.equal(root?.get<File>("name"), name),
                 session.criteriaBuilder?.equal(root?.get<File>("path"), path)
@@ -34,6 +32,8 @@ class FileDao(private val userID: Int, private val password: String) : Dao<File>
         } catch (e: NonUniqueResultException) {
             e.printStackTrace()
         } catch (ignored: NoResultException) {
+        } finally {
+            session.close()
         }
 
         return result

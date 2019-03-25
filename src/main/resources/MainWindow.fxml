@@ -1,70 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TreeTableColumn?>
+<?import javafx.scene.control.TreeTableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="rootAP" prefHeight="400.0" prefWidth="650.0"
-            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="ui.MainWindowController">
+
+<AnchorPane fx:id="rootAP" prefHeight="400.0" prefWidth="650.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.MainWindowController">
     <children>
-        <VBox layoutX="33.0" layoutY="6.0" prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0"
-              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox layoutX="33.0" layoutY="6.0" prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
                 <Label fx:id="usernameLabel" prefHeight="50.0" prefWidth="606.0" text="Files of ...">
                     <padding>
-                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                     </padding>
                     <font>
-                        <Font size="25.0"/>
+                        <Font size="25.0" />
                     </font>
                 </Label>
                 <AnchorPane prefHeight="354.0" prefWidth="600.0">
                     <children>
-                        <TabPane prefHeight="353.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE"
-                                 AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                                 AnchorPane.topAnchor="0.0">
+                        <TabPane prefHeight="353.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <tabs>
                                 <Tab closable="false" text="FIles">
                                     <content>
                                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                             <children>
-                                                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0"
-                                                      AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                                                      AnchorPane.topAnchor="0.0">
+                                                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                     <children>
-                                                        <Button fx:id="addFileButton" mnemonicParsing="false"
-                                                                onAction="#addFileClicked" text="Add a file">
+                                                        <Button fx:id="addFileButton" mnemonicParsing="false" onAction="#addFileClicked" text="Add a file">
                                                             <VBox.margin>
-                                                                <Insets bottom="10.0" left="10.0" right="10.0"
-                                                                        top="10.0"/>
+                                                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                                                             </VBox.margin>
                                                         </Button>
                                                         <AnchorPane prefHeight="354.0" prefWidth="600.0">
                                                             <VBox.margin>
-                                                                <Insets bottom="10.0" left="10.0" right="10.0"/>
+                                                                <Insets bottom="10.0" left="10.0" right="10.0" />
                                                             </VBox.margin>
                                                             <children>
-                                                                <TreeTableView fx:id="filesTree" layoutX="-23.0"
-                                                                               prefHeight="200.0" prefWidth="200.0"
-                                                                               AnchorPane.bottomAnchor="0.0"
-                                                                               AnchorPane.leftAnchor="0.0"
-                                                                               AnchorPane.rightAnchor="0.0"
-                                                                               AnchorPane.topAnchor="0.0">
+                                                                <TreeTableView fx:id="filesTree" layoutX="-23.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                                     <columns>
-                                                                        <TreeTableColumn fx:id="fileNameColumn"
-                                                                                         minWidth="200.0"
-                                                                                         prefWidth="-1.0" text="File"/>
-                                                                        <TreeTableColumn fx:id="createdColumn"
-                                                                                         minWidth="180.0"
-                                                                                         prefWidth="-1.0"
-                                                                                         text="Created"/>
-                                                                        <TreeTableColumn fx:id="modifiedColumn"
-                                                                                         minWidth="180.0"
-                                                                                         prefWidth="-1.0"
-                                                                                         text="Last modified"/>
-                                                                        <TreeTableColumn fx:id="deleteColumn"
-                                                                                         maxWidth="50.0" minWidth="50.0"
-                                                                                         prefWidth="-1.0"/>
+                                                                        <TreeTableColumn fx:id="fileNameColumn" minWidth="200.0" prefWidth="-1.0" text="File" />
+                                                                        <TreeTableColumn fx:id="createdColumn" minWidth="180.0" prefWidth="-1.0" text="Created" />
+                                                                        <TreeTableColumn fx:id="modifiedColumn" minWidth="180.0" prefWidth="-1.0" text="Last modified" />
+                                                                        <TreeTableColumn fx:id="deleteFileColumn" maxWidth="50.0" minWidth="50.0" prefWidth="-1.0" />
                                                                     </columns>
                                                                 </TreeTableView>
                                                             </children>
@@ -79,41 +63,24 @@
                                     <content>
                                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                             <children>
-                                                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0"
-                                                      AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                                                      AnchorPane.topAnchor="0.0">
+                                                <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                     <children>
-                                                        <Button fx:id="addPackageButton" mnemonicParsing="false"
-                                                                onAction="#addPackageClicked" text="Add a package">
+                                                        <Button fx:id="addPackageButton" mnemonicParsing="false" onAction="#addPackageClicked" text="Add a package">
                                                             <VBox.margin>
-                                                                <Insets bottom="10.0" left="10.0" right="10.0"
-                                                                        top="10.0"/>
+                                                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                                                             </VBox.margin>
                                                         </Button>
                                                         <AnchorPane prefHeight="354.0" prefWidth="600.0">
                                                             <VBox.margin>
-                                                                <Insets bottom="10.0" left="10.0" right="10.0"/>
+                                                                <Insets bottom="10.0" left="10.0" right="10.0" />
                                                             </VBox.margin>
                                                             <children>
-                                                                <TreeTableView fx:id="packagesTree" layoutX="-23.0"
-                                                                               prefHeight="200.0" prefWidth="200.0"
-                                                                               AnchorPane.bottomAnchor="0.0"
-                                                                               AnchorPane.leftAnchor="0.0"
-                                                                               AnchorPane.rightAnchor="0.0"
-                                                                               AnchorPane.topAnchor="0.0">
+                                                                <TreeTableView fx:id="packagesTree" layoutX="-23.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                                     <columns>
-                                                                        <TreeTableColumn fx:id="packageNameColumn"
-                                                                                         minWidth="200.0"
-                                                                                         prefWidth="-1.0"
-                                                                                         text="Package"/>
-                                                                        <TreeTableColumn fx:id="repositoryColumn"
-                                                                                         minWidth="180.0"
-                                                                                         prefWidth="-1.0"
-                                                                                         text="Repository"/>
-                                                                        <TreeTableColumn fx:id="configsListColumn"
-                                                                                         minWidth="180.0"
-                                                                                         prefWidth="-1.0"
-                                                                                         text="Configs"/>
+                                                                        <TreeTableColumn fx:id="packageNameColumn" minWidth="200.0" prefWidth="-1.0" text="Package" />
+                                                                        <TreeTableColumn fx:id="repositoryColumn" minWidth="180.0" prefWidth="-1.0" text="Repository" />
+                                                                        <TreeTableColumn fx:id="configsListColumn" minWidth="180.0" prefWidth="-1.0" text="Configs" />
+                                                      <TreeTableColumn fx:id="deletePackageColumn" maxWidth="50.0" minWidth="50.0" prefWidth="-1.0" />
                                                                     </columns>
                                                                 </TreeTableView>
                                                             </children>

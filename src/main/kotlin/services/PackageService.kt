@@ -28,9 +28,7 @@ class PackageService(userID: Int, password: String) : Service<Package>() {
         return packageDao.findFileById(id)
     }
 
-    override fun getAll(): List<Package> {
-        val all = packageDao.all
-        all.drop(1)
-        return all
+    override fun getAll(): List<Package>? {
+        return packageDao.all?.drop(1)
     }
 }

@@ -43,7 +43,6 @@ class Repository {
     override fun toString(): String = name
 
     companion object {
-        
         fun default(): Repository {
             return Repository(2, "default", "no_url", PackageManagerUtil.packageManagerName)
         }

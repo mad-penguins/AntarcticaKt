@@ -9,7 +9,7 @@ class File {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int = 0
+    var id: Int = 0
 
     lateinit var name: String
     var path: String? = null
@@ -28,9 +28,11 @@ class File {
 
     }
 
-    constructor(name: String, path: String) {
+    constructor(id: Int, name: String, path: String, content: ByteArray) {
+        this.id = id
         this.name = name
         this.path = path
+        this.content = content
     }
 
     constructor(name: String, path: String, content: ByteArray, created: Timestamp, modified: Timestamp) {
