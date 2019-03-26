@@ -8,7 +8,7 @@ import javafx.scene.layout.AnchorPane
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import models.Repository
-import utils.PackageManagerUtil
+import utils.PackageUtil
 
 
 class AddPackageDialogController {
@@ -25,7 +25,7 @@ class AddPackageDialogController {
         repositoryInput.items.add(Repository.default())
         repositoryInput.selectionModel.selectFirst()
         try {
-            for (rep in PackageManagerUtil.reposList) {
+            for (rep in PackageUtil.reposList) {
                 repositoryInput.items.add(rep)
             }
         } catch (e: Exception) {

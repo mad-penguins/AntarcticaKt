@@ -11,7 +11,7 @@ class FileService(userID: Int, password: String) : Service<File>() {
         return fileDao.findById(id)
     }
 
-    fun find(name: String, path: String) : File? {
+    fun find(name: String, path: String): File? {
         return fileDao.findByNamePath(name, path)
     }
 

@@ -1,11 +1,12 @@
 package utils
 
+import models.Package
 import models.Repository
 import java.io.File
 import java.nio.file.Files
 import java.util.*
 
-object PackageManagerUtil {
+object PackageUtil {
     val packageManagerName: String
         get() = "zypper"
 
@@ -46,4 +47,8 @@ object PackageManagerUtil {
             }
             return result
         }
+
+    fun installPackage(pkg: Package) {
+
+    }
 }

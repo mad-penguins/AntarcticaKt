@@ -1,6 +1,8 @@
 package ui
 
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
+import javafx.beans.value.ChangeListener
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
@@ -19,11 +21,22 @@ import services.RepositoryService
 
 import java.io.IOException
 import java.nio.file.Files
-import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
 import java.sql.Timestamp
 import java.util.*
+import javafx.beans.value.ObservableValue
+import utils.FileUtil
+import javafx.geometry.Pos
+import javafx.scene.control.cell.CheckBoxTreeTableCell
+import javafx.scene.control.TreeTableColumn
+import javafx.scene.control.TreeTableCell
+import javafx.beans.property.SimpleDoubleProperty
+import javafx.beans.property.DoubleProperty
+
+
+
+
+
 
 class MainWindowController {
 
@@ -59,8 +72,9 @@ class MainWindowController {
     lateinit var createdColumn: TreeTableColumn<FileRow, String>
     lateinit var modifiedColumn: TreeTableColumn<FileRow, String>
     lateinit var deleteFileColumn: TreeTableColumn<FileRow, String>
+    lateinit var fileDownloadedColumn: TreeTableColumn<FileRow, Boolean>
 
-    inner class FileRow(var id: List<Int>, name: String, created: Timestamp, lastModified: Timestamp) {
+    inner class FileRow(var id: List<Int>, name: String, created: Timestamp, lastModified: Timestamp, downloaded: Boolean) {
         var nameProperty = SimpleStringProperty(name)
         var createdProperty = SimpleStringProperty(
                 if (created.equals(Timestamp(0)))
@@ -74,18 +88,25 @@ class MainWindowController {
                 else
                     lastModified.toString()
         )
+        var downloadedProperty = SimpleBooleanProperty(downloaded)
     }
 
     private fun updateFilesTable() {
         val fileService = FileService(user.id, user.password)
         val userFiles = fileService.getAll()
 
-        val root = TreeItem(FileRow(listOf(-1), "n", Timestamp(0), Timestamp(0)))
-        fileNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.nameProperty }
-        createdColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.createdProperty }
-        modifiedColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> -> param.value.value.lastModifiedProperty }
+        val root = TreeItem(FileRow(listOf(-1), "n", Timestamp(0), Timestamp(0), true)) // TODO: check all the files in this directory
+        fileNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.nameProperty
+        }
+        createdColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.createdProperty
+        }
+        modifiedColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.lastModifiedProperty
+        }
 
-        val cellFactory = Callback<TreeTableColumn<FileRow, String>, TreeTableCell<FileRow, String>> {
+        deleteFileColumn.cellFactory = Callback<TreeTableColumn<FileRow, String>, TreeTableCell<FileRow, String>> {
             object : TreeTableCell<FileRow, String>() {
                 var btn = Button("X")
 
@@ -109,17 +130,60 @@ class MainWindowController {
             }
         }
 
-        deleteFileColumn.cellFactory = cellFactory
+        fileDownloadedColumn.cellValueFactory = Callback<TreeTableColumn.CellDataFeatures<FileRow, Boolean>, ObservableValue<Boolean>> { param ->
+            val file = param.value.value
+            val downloadedProperty = SimpleBooleanProperty(file.downloadedProperty.get())
+            downloadedProperty.addListener {
+                observable, oldValue, newValue ->
+                downloadedProperty.set(newValue)
+                when (newValue) {
+                    true -> {
+                        for (id in file.id) {
+                            FileUtil.downloadFile(fileService.find(id)!!)
+                        }
+                    }
+                    false -> {
+                        for (id in file.id) {
+                            FileUtil.deleteFile(fileService.find(id)!!)
+                        }
+                    }
+                }
+                updateFilesTable()
+            }
+            downloadedProperty
+        }
+
+        fileDownloadedColumn.cellFactory = Callback<TreeTableColumn<FileRow, Boolean>, TreeTableCell<FileRow, Boolean>> {
+            val cell = CheckBoxTreeTableCell<FileRow, Boolean>()
+            cell.alignment = Pos.CENTER
+            cell.isEditable = true
+            cell
+        }
+        filesTree.isEditable = true
 
         val filesByDir = HashMap<String, ArrayList<FileRow>>()
         for (userFile in userFiles) {
             if (filesByDir.containsKey(userFile.path)) {
                 filesByDir[userFile.path]!!.add(
-                        FileRow(listOf(userFile.id), userFile.name, userFile.created!!, userFile.modified!!)
+                        FileRow(
+                                listOf(userFile.id),
+                                userFile.name,
+                                userFile.created!!,
+                                userFile.modified!!,
+                                FileUtil.fileIsDownloaded(userFile.path + "/" + userFile.name)
+                        )
                 )
             } else {
                 filesByDir[userFile.path!!] = ArrayList(
-                        listOf(FileRow(listOf(userFile.id), userFile.name, userFile.created!!, userFile.modified!!))
+                        listOf(
+                                FileRow(
+                                        listOf(userFile.id),
+                                        userFile.name,
+                                        userFile.created!!,
+                                        userFile.modified!!,
+                                        FileUtil.fileIsDownloaded(userFile.path + "/" + userFile.name)
+                                )
+                        )
                 )
             }
         }
@@ -127,12 +191,15 @@ class MainWindowController {
         for ((key, value) in filesByDir) {
             val children = mutableListOf<TreeItem<FileRow>>()
             val ids = mutableListOf<Int>()
+            var dirIsDownloaded = true
             for (_file in value) {
                 val row = TreeItem(_file)
                 ids.addAll(_file.id)
                 children.add(row)
+                if (!_file.downloadedProperty.get())
+                    dirIsDownloaded = false
             }
-            val dir = TreeItem(FileRow(ids, key, Timestamp(0), Timestamp(0)))
+            val dir = TreeItem(FileRow(ids, key, Timestamp(0), Timestamp(0), dirIsDownloaded))
             dir.children.addAll(children)
             root.children.add(dir)
         }
@@ -227,28 +294,6 @@ class MainWindowController {
         return files
     }
 
-    @Throws(IOException::class)
-    private fun downloadFile(obj: File) {
-        val path = obj.path + '/'.toString() + obj.name
-        val file = java.io.File(path)
-        if (!file.exists()) {
-            if (!file.parentFile.mkdirs()) {
-                return
-            }
-            if (!file.createNewFile()) {
-                return
-            }
-        }
-        Files.write(file.toPath(), obj.content)
-
-        val attributes = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView::class.java)
-        attributes.setTimes(
-                FileTime.from(obj.created!!.toInstant()),
-                FileTime.from(obj.modified!!.toInstant()),
-                FileTime.from(obj.modified!!.toInstant())
-        )
-    }
-
 
     // packages logic
 
@@ -268,19 +313,24 @@ class MainWindowController {
                 else
                     configsList.toString()
         )
-
     }
 
     private fun updatePackagesTable() {
         val packageService = PackageService(user.id, user.password)
         val userPackages = packageService.getAll()
 
-        val root = TreeItem(PackageRow(listOf(-1),"", "", ArrayList()))
-        packageNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.nameProperty }
-        repositoryColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.repositoryProperty }
-        configsListColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> -> param.value.value.lastConfigsListProperty }
+        val root = TreeItem(PackageRow(listOf(-1), "", "", ArrayList()))
+        packageNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.nameProperty
+        }
+        repositoryColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.repositoryProperty
+        }
+        configsListColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.lastConfigsListProperty
+        }
 
-        val cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
+        deletePackageColumn.cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
             object : TreeTableCell<PackageRow, String>() {
                 var btn = Button("X")
 
@@ -304,17 +354,27 @@ class MainWindowController {
             }
         }
 
-        deletePackageColumn.cellFactory = cellFactory
-
         val packagesByRepository = HashMap<String, ArrayList<PackageRow>>()
         for (userPackage in userPackages!!) {
             if (packagesByRepository.containsKey(userPackage.repository!!.name)) {
                 packagesByRepository[userPackage.repository!!.name]!!.add(
-                        PackageRow(listOf(userPackage.id), userPackage.name!!, userPackage.repository!!.name, userPackage.files!!)
+                        PackageRow(
+                                listOf(userPackage.id),
+                                userPackage.name!!,
+                                userPackage.repository!!.name,
+                                userPackage.files!!
+                        )
                 )
             } else {
                 packagesByRepository[userPackage.repository!!.name] = ArrayList(
-                        listOf(PackageRow(listOf(userPackage.id), userPackage.name!!, userPackage.repository!!.name, userPackage.files!!))
+                        listOf(
+                                PackageRow(
+                                        listOf(userPackage.id),
+                                        userPackage.name!!,
+                                        userPackage.repository!!.name,
+                                        userPackage.files!!
+                                )
+                        )
                 )
             }
         }
@@ -412,9 +472,5 @@ class MainWindowController {
             config.`package` = pkg
             fileService.update(config)
         }
-    }
-
-    private fun installPackage(pkg: Package) {
-
     }
 }

@@ -1,6 +1,6 @@
 package models
 
-import utils.PackageManagerUtil
+import utils.PackageUtil
 
 import javax.persistence.*
 
@@ -44,7 +44,7 @@ class Repository {
 
     companion object {
         fun default(): Repository {
-            return Repository(2, "default", "no_url", PackageManagerUtil.packageManagerName)
+            return Repository(2, "default", "no_url", PackageUtil.packageManagerName)
         }
     }
 }
