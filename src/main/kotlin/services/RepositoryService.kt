@@ -12,7 +12,7 @@ class RepositoryService(userID: Int, password: String) : Service<Repository>() {
     }
 
     fun find(url: String): Repository? {
-        return repoDao.findbyURL(url)
+        return repoDao.findByURL(url)
     }
 
     override fun save(obj: Repository) {

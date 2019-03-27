@@ -16,7 +16,7 @@ class RepositoryDao(private val userID: Int, private val password: String) : Dao
         return SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(Repository::class.java, id)
     }
 
-    fun findbyURL(url: String): Repository? {
+    fun findByURL(url: String): Repository? {
         val session = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
         val criteriaQuery = session.criteriaBuilder.createQuery(Repository::class.java)
         val root = criteriaQuery.from(Repository::class.java)

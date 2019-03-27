@@ -4,6 +4,7 @@ import models.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributeView
+import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 
 object FileUtil {
@@ -14,8 +15,7 @@ object FileUtil {
 
     @Throws(IOException::class)
     fun downloadFile(obj: File) {
-        val path = obj.path + '/'.toString() + obj.name
-        val file = java.io.File(path)
+        val file = java.io.File("${obj.path}/${obj.name}")
         if (!file.exists()) {
             if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
                 return
@@ -35,12 +35,22 @@ object FileUtil {
     }
 
     fun deleteFile(obj: File) {
-        val path = obj.path + '/'.toString() + obj.name
-        val file = java.io.File(path)
-        if (file.delete()) {
-            println("deleted succesfully")
-            return
-        }
-        print("delete failed")
+        val file = java.io.File("${obj.path}/${obj.name}")
+        file.delete()
+    }
+
+    data class FileTimes(val created: FileTime, val modified: FileTime)
+
+    fun getFileTimes(file: java.io.File): FileTimes {
+        return FileTimes(
+                Files.readAttributes(
+                        file.toPath(),
+                        BasicFileAttributes::class.java
+                ).creationTime(),
+                Files.readAttributes(
+                        file.toPath(),
+                        BasicFileAttributes::class.java
+                ).lastModifiedTime()
+        )
     }
 }

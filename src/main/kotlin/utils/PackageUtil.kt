@@ -11,7 +11,7 @@ object PackageUtil {
         get() = "zypper"
 
     // zypper only now :(
-    val reposList: List<Repository>
+    val reposList: List<Repository> // TODO: add support of apt, dnf and pacman support
         @Throws(Exception::class)
         get() {
             val result = ArrayList<Repository>()

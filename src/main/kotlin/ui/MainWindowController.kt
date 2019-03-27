@@ -2,11 +2,13 @@ package ui
 
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
-import javafx.beans.value.ChangeListener
+import javafx.beans.value.ObservableValue
 import javafx.fxml.FXMLLoader
+import javafx.geometry.Pos
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.*
+import javafx.scene.control.cell.CheckBoxTreeTableCell
 import javafx.scene.layout.AnchorPane
 import javafx.stage.Modality
 import javafx.stage.Stage
@@ -18,24 +20,11 @@ import models.User
 import services.FileService
 import services.PackageService
 import services.RepositoryService
-
+import utils.FileUtil
 import java.io.IOException
 import java.nio.file.Files
-import java.nio.file.attribute.BasicFileAttributes
 import java.sql.Timestamp
 import java.util.*
-import javafx.beans.value.ObservableValue
-import utils.FileUtil
-import javafx.geometry.Pos
-import javafx.scene.control.cell.CheckBoxTreeTableCell
-import javafx.scene.control.TreeTableColumn
-import javafx.scene.control.TreeTableCell
-import javafx.beans.property.SimpleDoubleProperty
-import javafx.beans.property.DoubleProperty
-
-
-
-
 
 
 class MainWindowController {
@@ -133,8 +122,7 @@ class MainWindowController {
         fileDownloadedColumn.cellValueFactory = Callback<TreeTableColumn.CellDataFeatures<FileRow, Boolean>, ObservableValue<Boolean>> { param ->
             val file = param.value.value
             val downloadedProperty = SimpleBooleanProperty(file.downloadedProperty.get())
-            downloadedProperty.addListener {
-                observable, oldValue, newValue ->
+            downloadedProperty.addListener { _, _, newValue ->
                 downloadedProperty.set(newValue)
                 when (newValue) {
                     true -> {
@@ -170,7 +158,7 @@ class MainWindowController {
                                 userFile.name,
                                 userFile.created!!,
                                 userFile.modified!!,
-                                FileUtil.fileIsDownloaded(userFile.path + "/" + userFile.name)
+                                FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
                         )
                 )
             } else {
@@ -181,7 +169,7 @@ class MainWindowController {
                                         userFile.name,
                                         userFile.created!!,
                                         userFile.modified!!,
-                                        FileUtil.fileIsDownloaded(userFile.path + "/" + userFile.name)
+                                        FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
                                 )
                         )
                 )
@@ -257,18 +245,8 @@ class MainWindowController {
                 name,
                 location,
                 content,
-                Timestamp.from(
-                        Files.readAttributes(
-                                dirFile.toPath(),
-                                BasicFileAttributes::class.java
-                        ).creationTime().toInstant()
-                ),
-                Timestamp.from(
-                        Files.readAttributes(
-                                dirFile.toPath(),
-                                BasicFileAttributes::class.java
-                        ).lastModifiedTime().toInstant()
-                )
+                Timestamp.from(FileUtil.getFileTimes(dirFile).created.toInstant()),
+                Timestamp.from(FileUtil.getFileTimes(dirFile).modified.toInstant())
         )
         file.`package` = packageService.find(1)
 
@@ -311,7 +289,15 @@ class MainWindowController {
                 if (configsList.isEmpty())
                     ""
                 else
-                    configsList.toString()
+                    run {
+                        print(configsList.size)
+                        var result = "${configsList[0].path}/${configsList[0].name}"
+                        if (configsList.size > 1) {
+                            for (config in configsList.drop(1))
+                                result += ", ${config.path}/${config.name}"
+                        }
+                        result
+                    }
         )
     }
 
