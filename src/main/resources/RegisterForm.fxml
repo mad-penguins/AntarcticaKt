@@ -6,7 +6,7 @@
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="rootAP" maxHeight="-Infinity" maxWidth="-Infinity"
             minHeight="-Infinity"
             minWidth="-Infinity" prefHeight="195.0" prefWidth="400.0"
-            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="ui.RegisterFormController">
+            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="ui.accounts.RegisterFormController">
     <children>
         <TitledPane animated="false" layoutX="-47.0" layoutY="-30.0" text="Antarctica Registration"
                     AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"

@@ -1,6 +1,8 @@
 package services
 
-abstract class Service<Model> {
+abstract class Service<Model>(protected var userID: Int, protected var password: String) {
+
+    abstract fun reload(): Service<Model>
 
     abstract fun find(id: Int): Model?
 

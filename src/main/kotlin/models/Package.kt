@@ -8,7 +8,7 @@ import javax.persistence.*
 class Package {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int = 0
+    var id: Int = 0
 
     var name: String? = null
 
@@ -17,7 +17,7 @@ class Package {
     var repository: Repository? = null
 
     @OneToMany(mappedBy = "package", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var files: List<File>? = null
+    var files: MutableList<File>? = null
 
     constructor() {
 
@@ -27,5 +27,18 @@ class Package {
         this.name = name
         this.repository = repository
         this.files = ArrayList()
+    }
+
+    constructor(id: Int) {
+        this.id = id
+    }
+
+    companion object {
+        fun default(): Package {
+            val temp = Package(1)
+            temp.name = ""
+            temp.repository = Repository.empty()
+            return temp
+        }
     }
 }

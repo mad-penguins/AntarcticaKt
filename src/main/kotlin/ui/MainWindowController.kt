@@ -20,9 +20,11 @@ import models.User
 import services.FileService
 import services.PackageService
 import services.RepositoryService
+import ui.packages.AddPackageDialogController
+import ui.packages.PackageConfigManagerController
 import utils.FileUtil
+import utils.UIUtil
 import java.io.IOException
-import java.nio.file.Files
 import java.sql.Timestamp
 import java.util.*
 
@@ -42,16 +44,6 @@ class MainWindowController {
         updatePackagesTable()
     }
 
-    private fun showInvalidPathAlert(path: String) {
-        if (!path.isEmpty()) {
-            val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Wrong file"
-            alert.headerText = "Wrong file"
-            alert.contentText = "File $path does not exist!"
-            alert.showAndWait()
-        }
-    }
-
 
     // files logic
 
@@ -60,7 +52,6 @@ class MainWindowController {
     lateinit var fileNameColumn: TreeTableColumn<FileRow, String>
     lateinit var createdColumn: TreeTableColumn<FileRow, String>
     lateinit var modifiedColumn: TreeTableColumn<FileRow, String>
-    lateinit var deleteFileColumn: TreeTableColumn<FileRow, String>
     lateinit var fileDownloadedColumn: TreeTableColumn<FileRow, Boolean>
 
     inner class FileRow(var id: List<Int>, name: String, created: Timestamp, lastModified: Timestamp, downloaded: Boolean) {
@@ -85,17 +76,8 @@ class MainWindowController {
         val userFiles = fileService.getAll()
 
         val root = TreeItem(FileRow(listOf(-1), "n", Timestamp(0), Timestamp(0), true)) // TODO: check all the files in this directory
-        fileNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
-            param.value.value.nameProperty
-        }
-        createdColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
-            param.value.value.createdProperty
-        }
-        modifiedColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
-            param.value.value.lastModifiedProperty
-        }
 
-        deleteFileColumn.cellFactory = Callback<TreeTableColumn<FileRow, String>, TreeTableCell<FileRow, String>> {
+        fileNameColumn.cellFactory = Callback<TreeTableColumn<FileRow, String>, TreeTableCell<FileRow, String>> {
             object : TreeTableCell<FileRow, String>() {
                 var btn = Button("X")
 
@@ -112,11 +94,26 @@ class MainWindowController {
                             updateFilesTable()
                             updatePackagesTable()
                         }
-                        graphic = btn
-                        text = null
+                        if (treeTableRow.item != null) {
+                            graphic = btn
+                            text = treeTableRow.item.nameProperty.get()
+                        } else {
+                            graphic = null
+                            text = null
+                        }
                     }
                 }
             }
+        }
+
+        fileNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.nameProperty
+        }
+        createdColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.createdProperty
+        }
+        modifiedColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<FileRow, String> ->
+            param.value.value.lastModifiedProperty
         }
 
         fileDownloadedColumn.cellValueFactory = Callback<TreeTableColumn.CellDataFeatures<FileRow, Boolean>, ObservableValue<Boolean>> { param ->
@@ -151,28 +148,17 @@ class MainWindowController {
 
         val filesByDir = HashMap<String, ArrayList<FileRow>>()
         for (userFile in userFiles) {
+            val newRow = FileRow(
+                    listOf(userFile.id),
+                    userFile.name,
+                    userFile.created!!,
+                    userFile.modified!!,
+                    FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
+            )
             if (filesByDir.containsKey(userFile.path)) {
-                filesByDir[userFile.path]!!.add(
-                        FileRow(
-                                listOf(userFile.id),
-                                userFile.name,
-                                userFile.created!!,
-                                userFile.modified!!,
-                                FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
-                        )
-                )
+                filesByDir[userFile.path]!!.add(newRow)
             } else {
-                filesByDir[userFile.path!!] = ArrayList(
-                        listOf(
-                                FileRow(
-                                        listOf(userFile.id),
-                                        userFile.name,
-                                        userFile.created!!,
-                                        userFile.modified!!,
-                                        FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
-                                )
-                        )
-                )
+                filesByDir[userFile.path!!] = ArrayList(listOf(newRow))
             }
         }
 
@@ -187,6 +173,7 @@ class MainWindowController {
                 if (!_file.downloadedProperty.get())
                     dirIsDownloaded = false
             }
+            // TODO: add directory created and modified times
             val dir = TreeItem(FileRow(ids, key, Timestamp(0), Timestamp(0), dirIsDownloaded))
             dir.children.addAll(children)
             root.children.add(dir)
@@ -197,79 +184,8 @@ class MainWindowController {
 
     @Throws(IOException::class)
     fun addFileClicked() {
-        val loader = FXMLLoader(javaClass.getResource("/AddFileDialog.fxml"))
-        val root = loader.load<Parent>()
-        val controller = loader.getController<AddFileDialogController>()
-
-        val stage = Stage()
-        stage.scene = Scene(root)
-        stage.initModality(Modality.APPLICATION_MODAL)
-        stage.isResizable = false
-        stage.showAndWait()
-
-        val filesList = controller.filePathInput.text
-        if (filesList.isEmpty()) {
-            return
-        }
-        val filesPath = filesList.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-
-        for (_path in filesPath) {
-            val path = _path.trim { it <= ' ' }
-            val tempFile = java.io.File(path)
-            if (!tempFile.exists()) {
-                showInvalidPathAlert(path)
-                return
-            }
-
-            if (tempFile.isFile) {
-                insertFileIntoDB(tempFile, path)
-                updateFilesTable()
-            }
-
-            if (tempFile.isDirectory) {
-                insertCatalogIntoDB(tempFile)
-                updateFilesTable()
-            }
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun insertFileIntoDB(dirFile: java.io.File, path: String): File {
-        val name = path.substring(path.lastIndexOf('/') + 1)
-        val location = path.substring(0, path.lastIndexOf('/'))
-
-        val content = Files.readAllBytes(dirFile.toPath())
-
-        val packageService = PackageService(user.id, user.password)
-        val file = File(
-                name,
-                location,
-                content,
-                Timestamp.from(FileUtil.getFileTimes(dirFile).created.toInstant()),
-                Timestamp.from(FileUtil.getFileTimes(dirFile).modified.toInstant())
-        )
-        file.`package` = packageService.find(1)
-
-        val fileService = FileService(user.id, user.password)
-        fileService.save(file)
-
-        return file
-    }
-
-    @Throws(IOException::class)
-    private fun insertCatalogIntoDB(catalog: java.io.File): List<File> {
-        val filesInDir = catalog.listFiles()!!
-
-        val files = ArrayList<File>()
-        for (dirFile in filesInDir) {
-            if (dirFile.isDirectory) {
-                files.addAll(insertCatalogIntoDB(dirFile))
-            } else if (dirFile.isFile) {
-                val path = dirFile.absolutePath
-                files.add(insertFileIntoDB(dirFile, path))
-            }
-        }
-        return files
+        UIUtil.addFile(FileService(user.id, user.password))
+        updateFilesTable()
     }
 
 
@@ -280,17 +196,15 @@ class MainWindowController {
     lateinit var packageNameColumn: TreeTableColumn<PackageRow, String>
     lateinit var repositoryColumn: TreeTableColumn<PackageRow, String>
     lateinit var configsListColumn: TreeTableColumn<PackageRow, String>
-    lateinit var deletePackageColumn: TreeTableColumn<PackageRow, String>
 
-    inner class PackageRow(var id: List<Int>, name: String, repository: String, configsList: List<File>) {
+    inner class PackageRow(var id: List<Int>, name: String, repository: String, configsList: List<File>, var isRepo: Boolean?) {
         var nameProperty = SimpleStringProperty(name)
         var repositoryProperty = SimpleStringProperty(repository)
-        var lastConfigsListProperty = SimpleStringProperty(
+        var configsListProperty = SimpleStringProperty(
                 if (configsList.isEmpty())
                     ""
                 else
                     run {
-                        print(configsList.size)
                         var result = "${configsList[0].path}/${configsList[0].name}"
                         if (configsList.size > 1) {
                             for (config in configsList.drop(1))
@@ -305,18 +219,9 @@ class MainWindowController {
         val packageService = PackageService(user.id, user.password)
         val userPackages = packageService.getAll()
 
-        val root = TreeItem(PackageRow(listOf(-1), "", "", ArrayList()))
-        packageNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
-            param.value.value.nameProperty
-        }
-        repositoryColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
-            param.value.value.repositoryProperty
-        }
-        configsListColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
-            param.value.value.lastConfigsListProperty
-        }
+        val root = TreeItem(PackageRow(listOf(-1), "", "", ArrayList(), true))
 
-        deletePackageColumn.cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
+        packageNameColumn.cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
             object : TreeTableCell<PackageRow, String>() {
                 var btn = Button("X")
 
@@ -333,35 +238,70 @@ class MainWindowController {
                             updatePackagesTable()
                             updateFilesTable()
                         }
-                        graphic = btn
-                        text = null
+                        if (treeTableRow.item != null) {
+                            graphic = btn
+                            text = treeTableRow.item.nameProperty.get()
+                        } else {
+                            graphic = null
+                            text = null
+                        }
                     }
                 }
             }
         }
 
+        packageNameColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.nameProperty
+        }
+        repositoryColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.repositoryProperty
+        }
+        configsListColumn.cellFactory = Callback<TreeTableColumn<PackageRow, String>, TreeTableCell<PackageRow, String>> {
+            object : TreeTableCell<PackageRow, String>() {
+                var btn = Button("Edit")
+
+                public override fun updateItem(item: String?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    if (empty) {
+                        graphic = null
+                        text = null
+                    } else {
+                        btn.setOnAction {
+                            manageConfigs(packageService.find(treeTableRow.item.id[0])!!) // there's a guarantee that this row can be only a package
+                            updatePackagesTable()
+                            updateFilesTable()
+                        }
+                        if (treeTableRow.item != null) {
+                            if (!treeTableRow.item.isRepo!!) {
+                                graphic = btn
+                                text = treeTableRow.item.configsListProperty.get()
+                            }
+                        } else {
+                            graphic = null
+                            text = null
+                        }
+                    }
+                }
+            }
+        }
+
+        configsListColumn.setCellValueFactory { param: TreeTableColumn.CellDataFeatures<PackageRow, String> ->
+            param.value.value.configsListProperty
+        }
+
         val packagesByRepository = HashMap<String, ArrayList<PackageRow>>()
         for (userPackage in userPackages!!) {
+            val newRow = PackageRow(
+                    listOf(userPackage.id),
+                    userPackage.name!!,
+                    userPackage.repository!!.name,
+                    userPackage.files!!,
+                    false
+            )
             if (packagesByRepository.containsKey(userPackage.repository!!.name)) {
-                packagesByRepository[userPackage.repository!!.name]!!.add(
-                        PackageRow(
-                                listOf(userPackage.id),
-                                userPackage.name!!,
-                                userPackage.repository!!.name,
-                                userPackage.files!!
-                        )
-                )
+                packagesByRepository[userPackage.repository!!.name]!!.add(newRow)
             } else {
-                packagesByRepository[userPackage.repository!!.name] = ArrayList(
-                        listOf(
-                                PackageRow(
-                                        listOf(userPackage.id),
-                                        userPackage.name!!,
-                                        userPackage.repository!!.name,
-                                        userPackage.files!!
-                                )
-                        )
-                )
+                packagesByRepository[userPackage.repository!!.name] = ArrayList(listOf(newRow))
             }
         }
 
@@ -373,13 +313,26 @@ class MainWindowController {
                 children.add(row)
                 ids.addAll(_package.id)
             }
-            val dir = TreeItem(PackageRow(ids, key, "", ArrayList()))
-            dir.children.addAll(children)
-            root.children.add(dir)
+            val repo = TreeItem(PackageRow(ids, key, "", ArrayList(), true))
+            repo.children.addAll(children)
+            root.children.add(repo)
         }
 
         packagesTree.root = root
         packagesTree.isShowRoot = false
+    }
+
+    private fun manageConfigs(pkg: Package) {
+        val loader = FXMLLoader(javaClass.getResource("/PackageConfigManager.fxml"))
+        val root = loader.load<Parent>()
+        val controller = loader.getController<PackageConfigManagerController>()
+        controller.setPackage(pkg, user)
+
+        val stage = Stage()
+        stage.scene = Scene(root)
+        stage.initModality(Modality.APPLICATION_MODAL)
+        stage.isResizable = false
+        stage.showAndWait()
     }
 
     @Throws(Exception::class)
@@ -412,7 +365,7 @@ class MainWindowController {
                 val path = _path.trim { it <= ' ' }
                 val tempFile = java.io.File(path)
                 if (!tempFile.exists()) {
-                    showInvalidPathAlert(path)
+                    UIUtil.showInvalidPathAlert(path)
                     return
                 }
 
@@ -424,12 +377,12 @@ class MainWindowController {
                     configs.add(entry)
                 } else {
                     if (tempFile.isFile) {
-                        configs.add(insertFileIntoDB(tempFile, path))
+                        configs.add(FileUtil.insertFileIntoDB(tempFile, path, Package.default(), FileService(user.id, user.password)))
                         updateFilesTable()
                     }
 
                     if (tempFile.isDirectory) {
-                        configs.addAll(insertCatalogIntoDB(tempFile))
+                        configs.addAll(FileUtil.insertCatalogIntoDB(tempFile, Package.default(), FileService(user.id, user.password)))
                         updateFilesTable()
                     }
                 }

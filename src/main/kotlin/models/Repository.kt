@@ -46,5 +46,9 @@ class Repository {
         fun default(): Repository {
             return Repository(2, "default", "no_url", PackageUtil.packageManagerName)
         }
+
+        fun empty(): Repository {
+            return Repository(1, "", "", "")
+        }
     }
 }

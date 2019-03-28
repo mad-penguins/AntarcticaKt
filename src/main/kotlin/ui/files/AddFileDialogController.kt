@@ -1,4 +1,4 @@
-package ui
+package ui.files
 
 import javafx.scene.control.Button
 import javafx.scene.control.TextField
@@ -17,8 +17,8 @@ class AddFileDialogController {
 
         val fileChooser = FileChooser()
         fileChooser.title = "Select file or directory"
-        val files = fileChooser.showOpenMultipleDialog(stage).toString()
-
+        val res = fileChooser.showOpenMultipleDialog(stage) ?: return
+        val files = res.toString()
         filePathInput.text = files.substring(1, files.length - 1)
     }
 

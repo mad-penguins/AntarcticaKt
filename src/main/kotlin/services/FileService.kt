@@ -3,9 +3,14 @@ package services
 import dao.FileDao
 import models.File
 
-class FileService(userID: Int, password: String) : Service<File>() {
+class FileService(userID: Int, password: String) : Service<File>(userID, password) {
 
-    private val fileDao: FileDao = FileDao(userID, password)
+    private var fileDao: FileDao = FileDao(userID, password)
+
+    override fun reload(): FileService {
+        fileDao = FileDao(userID, password)
+        return this
+    }
 
     override fun find(id: Int): File? {
         return fileDao.findById(id)

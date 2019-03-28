@@ -67,9 +67,6 @@
                                                                                          minWidth="50.0"
                                                                                          prefWidth="91.0"
                                                                                          text="Downloaded"/>
-                                                                        <TreeTableColumn fx:id="deleteFileColumn"
-                                                                                         maxWidth="78.0" minWidth="19.0"
-                                                                                         prefWidth="34.0"/>
                                                                     </columns>
                                                                 </TreeTableView>
                                                             </children>
@@ -119,9 +116,6 @@
                                                                                          minWidth="180.0"
                                                                                          prefWidth="-1.0"
                                                                                          text="Configs"/>
-                                                                        <TreeTableColumn fx:id="deletePackageColumn"
-                                                                                         maxWidth="50.0" minWidth="50.0"
-                                                                                         prefWidth="-1.0"/>
                                                                     </columns>
                                                                 </TreeTableView>
                                                             </children>

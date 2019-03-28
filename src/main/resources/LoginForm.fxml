@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" stylesheets="styles/main.css" maxHeight="-Infinity" maxWidth="-Infinity"
             minHeight="-Infinity" minWidth="-Infinity" prefHeight="160.0" prefWidth="350.0"
-            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="ui.LoginFormController">
+            xmlns="http://javafx.com/javafx/8.0.172-ea" fx:controller="ui.accounts.LoginFormController">
     <children>
         <TitledPane styleClass="titled-pane" animated="false" layoutX="-47.0" layoutY="-30.0" text="Antarctica Login"
                     AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"

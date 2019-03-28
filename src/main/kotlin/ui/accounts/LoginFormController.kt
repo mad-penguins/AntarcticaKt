@@ -1,5 +1,7 @@
-package ui
+package ui.accounts
 
+import exceptions.LoginException
+import exceptions.RegisterException
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
@@ -12,14 +14,8 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import khttp.post
 import models.User
+import ui.MainWindowController
 import java.io.IOException
-
-
-internal class LoginException(val kind: Kind) : Exception() {
-    enum class Kind {
-        WRONG_LOGIN, WRONG_PASSWORD
-    }
-}
 
 class LoginFormController {
 
@@ -29,13 +25,13 @@ class LoginFormController {
 
     @FXML
     fun initialize() {
-        loginField.textProperty().addListener { observable, old_value, new_value ->
+        loginField.textProperty().addListener { _, old_value, new_value ->
             if (new_value.contains(" ")) {
                 loginField.text = old_value
             }
         }
 
-        passwordField.textProperty().addListener { observable, old_value, new_value ->
+        passwordField.textProperty().addListener { _, old_value, new_value ->
             if (new_value.contains(" ")) {
                 passwordField.text = old_value
             }
@@ -60,7 +56,16 @@ class LoginFormController {
             }
         }
 
-        assert(!(jsonObject.has("id") && jsonObject.has("name")))
+        if (!(jsonObject.has("id") && jsonObject.has("name"))) {
+            val alert = Alert(Alert.AlertType.ERROR)
+            alert.title = "Server error"
+            alert.headerText = "Server error"
+            alert.contentText = "The server sent wrong response and I can't login properly. :(" +
+                    "\nKeep calm and try to update me.\n" +
+                    "Error code is 10."
+            alert.showAndWait()
+            assert(true)
+        }
         return User(jsonObject["id"] as Int, jsonObject["login"] as String, jsonObject["name"] as String)
     }
 
@@ -76,11 +81,24 @@ class LoginFormController {
             val alert = Alert(Alert.AlertType.ERROR)
             alert.title = "Wrong login data"
             when (le.kind) {
-                LoginException.Kind.WRONG_LOGIN -> alert.headerText = "Wrong login"
-                LoginException.Kind.WRONG_PASSWORD -> alert.headerText = "Wrong password"
+                LoginException.Kind.WRONG_LOGIN -> {
+                    alert.headerText = "Wrong login"
+                    alert.contentText = "Please check your login."
+                }
+                LoginException.Kind.WRONG_PASSWORD -> {
+                    alert.headerText = "Wrong password"
+                    alert.contentText = "Please check your password."
+                }
             }
             alert.showAndWait()
+        } catch (ce: java.net.ConnectException) {
+            val alert = Alert(Alert.AlertType.ERROR)
+            alert.title = "Connection error"
+            alert.headerText = "Connection error"
+            alert.contentText = "There's a problem with your connection.\nPlease check your internet connection."
+            alert.showAndWait()
         } catch (e: Exception) {
+            println("Some unknown unhandled exception:")
             e.printStackTrace()
         }
 

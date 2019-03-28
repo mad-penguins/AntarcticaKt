@@ -3,9 +3,14 @@ package services
 import dao.RepositoryDao
 import models.Repository
 
-class RepositoryService(userID: Int, password: String) : Service<Repository>() {
+class RepositoryService(userID: Int, password: String) : Service<Repository>(userID, password) {
 
-    private val repoDao: RepositoryDao = RepositoryDao(userID, password)
+    private var repoDao: RepositoryDao = RepositoryDao(userID, password)
+
+    override fun reload(): RepositoryService {
+        repoDao = RepositoryDao(userID, password)
+        return this
+    }
 
     override fun find(id: Int): Repository {
         return repoDao.findById(id)

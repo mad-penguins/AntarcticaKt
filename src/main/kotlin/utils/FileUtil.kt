@@ -1,11 +1,15 @@
 package utils
 
 import models.File
+import models.Package
+import services.FileService
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.sql.Timestamp
+import java.util.*
 
 object FileUtil {
 
@@ -52,5 +56,41 @@ object FileUtil {
                         BasicFileAttributes::class.java
                 ).lastModifiedTime()
         )
+    }
+
+    @Throws(IOException::class)
+    fun insertFileIntoDB(dirFile: java.io.File, path: String, pkg: Package, service: FileService): File {
+        val name = path.substring(path.lastIndexOf('/') + 1)
+        val location = path.substring(0, path.lastIndexOf('/'))
+
+        val content = Files.readAllBytes(dirFile.toPath())
+
+        val file = File(
+                name,
+                location,
+                content,
+                Timestamp.from(FileUtil.getFileTimes(dirFile).created.toInstant()),
+                Timestamp.from(FileUtil.getFileTimes(dirFile).modified.toInstant())
+        )
+        file.`package` = pkg
+        service.save(file)
+
+        return file
+    }
+
+    @Throws(IOException::class)
+    fun insertCatalogIntoDB(catalog: java.io.File, pkg: Package, service: FileService): List<File> {
+        val filesInDir = catalog.listFiles()!!
+
+        val files = ArrayList<File>()
+        for (dirFile in filesInDir) {
+            if (dirFile.isDirectory) {
+                files.addAll(insertCatalogIntoDB(dirFile, pkg, service.reload()))
+            } else if (dirFile.isFile) {
+                val path = dirFile.absolutePath
+                files.add(insertFileIntoDB(dirFile, path, pkg, service.reload()))
+            }
+        }
+        return files
     }
 }

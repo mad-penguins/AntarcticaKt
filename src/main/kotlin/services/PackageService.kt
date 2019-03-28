@@ -4,9 +4,14 @@ import dao.PackageDao
 import models.File
 import models.Package
 
-class PackageService(userID: Int, password: String) : Service<Package>() {
+class PackageService(userID: Int, password: String) : Service<Package>(userID, password) {
 
-    private val packageDao: PackageDao = PackageDao(userID, password)
+    private var packageDao: PackageDao = PackageDao(userID, password)
+
+    override fun reload(): PackageService {
+        packageDao = PackageDao(userID, password)
+        return this
+    }
 
     override fun find(id: Int): Package? {
         return packageDao.findById(id)

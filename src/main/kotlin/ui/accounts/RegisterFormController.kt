@@ -1,4 +1,4 @@
-package ui
+package ui.accounts
 
 import javafx.fxml.FXML
 import javafx.scene.control.PasswordField
@@ -6,18 +6,6 @@ import javafx.scene.control.TextField
 import javafx.scene.layout.AnchorPane
 import javafx.stage.Stage
 
-internal class RegisterException : Exception() {
-
-    val kind: Kind
-
-    enum class Kind {
-        ALREADY_REGISTERED
-    }
-
-    init {
-        this.kind = Kind.ALREADY_REGISTERED
-    }
-}
 
 class RegisterFormController {
 
