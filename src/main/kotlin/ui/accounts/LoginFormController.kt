@@ -91,15 +91,19 @@ class LoginFormController {
                 }
             }
             alert.showAndWait()
-        } catch (ce: java.net.ConnectException) {
-            val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Connection error"
-            alert.headerText = "Connection error"
-            alert.contentText = "There's a problem with your connection.\nPlease check your internet connection."
-            alert.showAndWait()
         } catch (e: Exception) {
-            println("Some unknown unhandled exception:")
-            e.printStackTrace()
+            when (e) {
+                is java.net.ConnectException, is java.net.SocketException -> {
+                    val alert = Alert(Alert.AlertType.ERROR)
+                    alert.title = "Connection error"
+                    alert.headerText = "Connection error"
+                    alert.contentText = "There's a problem with your connection.\nPlease check your internet connection."
+                    alert.showAndWait()
+                } else -> {
+                    println("Some unknown unhandled exception:")
+                    e.printStackTrace()
+                }
+            }
         }
 
         if (id != -1) {

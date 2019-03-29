@@ -12,7 +12,7 @@ class RepositoryService(userID: Int, password: String) : Service<Repository>(use
         return this
     }
 
-    override fun find(id: Int): Repository {
+    override fun find(id: Int): Repository? {
         return repoDao.findById(id)
     }
 
@@ -32,7 +32,7 @@ class RepositoryService(userID: Int, password: String) : Service<Repository>(use
         repoDao.delete(obj)
     }
 
-    fun findPackageById(id: Int): Package {
+    fun findPackageById(id: Int): Package? {
         return repoDao.findPackageById(id)
     }
 

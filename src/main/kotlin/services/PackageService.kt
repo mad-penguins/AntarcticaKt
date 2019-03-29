@@ -29,7 +29,7 @@ class PackageService(userID: Int, password: String) : Service<Package>(userID, p
         packageDao.delete(obj)
     }
 
-    fun findFileById(id: Int): File {
+    fun findFileById(id: Int): File? {
         return packageDao.findFileById(id)
     }
 

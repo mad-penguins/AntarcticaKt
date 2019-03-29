@@ -3,17 +3,36 @@ package dao
 import models.Repository
 import org.hibernate.NonUniqueResultException
 import utils.SessionFactoryUtil
+import utils.UIUtil
 
 import javax.persistence.NoResultException
 
 class RepositoryDao(private val userID: Int, private val password: String) : Dao<Repository>() {
 
     override val all: List<Repository>?
-        get() = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
-                .createQuery("from Repository").list() as List<Repository>
+        get() = try {
+            SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()
+                    .createQuery("from Repository").list() as List<Repository>
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+            null
+        }
 
-    override fun findById(id: Int): Repository {
-        return SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(Repository::class.java, id)
+    override fun findById(id: Int): Repository? {
+        return try {
+            SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(Repository::class.java, id)
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+            null
+        }
     }
 
     fun findByURL(url: String): Repository? {
@@ -30,8 +49,13 @@ class RepositoryDao(private val userID: Int, private val password: String) : Dao
             result = session.createQuery(criteriaQuery).singleResult
         } catch (e: NonUniqueResultException) {
             e.printStackTrace()
-        } catch (ignored: NoResultException) {
-        }
+        }catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+        } catch (ignored: NoResultException) {}
 
         return result
     }
@@ -60,8 +84,17 @@ class RepositoryDao(private val userID: Int, private val password: String) : Dao
         session.close()
     }
 
-    fun findPackageById(id: Int): Package {
-        return SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(Package::class.java, id)
+    fun findPackageById(id: Int): Package? {
+        return try {
+            SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession().get(Package::class.java, id)
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+            null
+        }
     }
 
 }

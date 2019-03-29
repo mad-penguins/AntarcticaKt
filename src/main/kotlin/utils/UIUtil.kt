@@ -11,6 +11,15 @@ import services.FileService
 import ui.files.AddFileDialogController
 
 object UIUtil {
+
+    fun showHibernateError(error: String) {
+        val alert = Alert(Alert.AlertType.ERROR)
+        alert.title = "Server error"
+        alert.headerText = "Too much database activity"
+        alert.contentText = "$error\n Try again later."
+        alert.showAndWait()
+    }
+
     fun showInvalidPathAlert(path: String) {
         if (!path.isEmpty()) {
             val alert = Alert(Alert.AlertType.ERROR)

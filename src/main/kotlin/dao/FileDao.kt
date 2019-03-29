@@ -5,15 +5,35 @@ package dao
 import models.File
 import org.hibernate.NonUniqueResultException
 import utils.SessionFactoryUtil
+import utils.UIUtil
 import javax.persistence.NoResultException
 
 class FileDao(private val userID: Int, private val password: String) : Dao<File>() {
 
-    override val all: List<File>
-        get() = SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()?.createQuery("from File")?.list() as List<File>
+    override val all: List<File>?
+        get() = try {
+            SessionFactoryUtil.getSessionFactory(userID, password)
+                    ?.openSession()?.createQuery("from File")?.list() as List<File>
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+            null
+        }
 
     override fun findById(id: Int): File? {
-        return SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()?.get(File::class.java, id)
+        return try {
+            SessionFactoryUtil.getSessionFactory(userID, password)!!.openSession()?.get(File::class.java, id)
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+            null
+        }
     }
 
     fun findByNamePath(name: String, path: String): File? {
@@ -31,7 +51,14 @@ class FileDao(private val userID: Int, private val password: String) : Dao<File>
             result = session?.createQuery(criteriaQuery)?.singleResult
         } catch (e: NonUniqueResultException) {
             e.printStackTrace()
-        } catch (ignored: NoResultException) {
+        } catch (e: Exception) {
+            when (e) {
+                is org.hibernate.HibernateException, is javax.persistence.PersistenceException -> {
+                    UIUtil.showHibernateError(e.toString())
+                } else -> { e.printStackTrace() }
+            }
+        }
+        catch (ignored: NoResultException) {
         } finally {
             session.close()
         }

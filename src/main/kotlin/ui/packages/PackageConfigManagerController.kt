@@ -15,13 +15,14 @@ import models.Package
 import models.User
 import services.FileService
 import services.PackageService
+import utils.FileUtil
 import utils.UIUtil
 
 
 class PackageConfigManagerController {
     lateinit var rootAP: AnchorPane
     lateinit var label: Label
-    lateinit var configsListView: ListView<File>
+    lateinit var configsList: ListView<File>
     lateinit var addConfigButton: Button
     lateinit var okButton: Button
     lateinit var pkg: Package
@@ -37,7 +38,7 @@ class PackageConfigManagerController {
 
         updateList()
 
-        configsListView.cellFactory = object : Callback<ListView<File>, ListCell<File>> {
+        configsList.cellFactory = object : Callback<ListView<File>, ListCell<File>> {
             override fun call(param: ListView<File>): ListCell<File> {
                 return object : ListCell<File>() {
                     public override fun updateItem(obj: File?, empty: Boolean) {
@@ -49,20 +50,39 @@ class PackageConfigManagerController {
                             text = "${obj?.path}/${obj?.name}"
 
                             val layout = HBox()
-                            val delete = Button("X")
-                            val edit = Button("Edit")
-                            layout.children.addAll(delete, edit)
                             layout.spacing = 5.0
+
+                            val remove = Button("X")
+                            val edit = Button("Edit")
+                            val buttons = mutableListOf(remove, edit)
 
                             edit.onAction = EventHandler<ActionEvent> {
                                 fileService.delete(obj!!)
                                 UIUtil.addFile(fileService.reload(), pkg, text)
                                 updateList()
                             }
-                            delete.onAction = EventHandler<ActionEvent> {
+                            remove.onAction = EventHandler<ActionEvent> {
                                 fileService.delete(obj!!)
                                 updateList()
                             }
+
+                            if (!FileUtil.fileIsDownloaded("${obj!!.path}/${obj.name}")) {
+                                val download = Button("Download")
+                                buttons.add(download)
+                                download.onAction = EventHandler<ActionEvent> {
+                                    FileUtil.downloadFile(obj)
+                                    updateList()
+                                }
+                            } else {
+                                val delete = Button("Delete")
+                                buttons.add(delete)
+                                delete.onAction = EventHandler<ActionEvent> {
+                                    FileUtil.deleteFile(obj)
+                                    updateList()
+                                }
+                            }
+
+                            layout.children.addAll(buttons)
                             graphic = layout
                         }
                     }
@@ -72,12 +92,22 @@ class PackageConfigManagerController {
     }
 
     private fun updateList() {
-        configsListView.items.clear()
-        pkg = pkgService.reload().find(pkg.id)!!
+        val response = pkgService.reload().find(pkg.id)
+        if (response == null) {
+            val stage = rootAP.scene.window as Stage
+            stage.close()
+            return
+        }
+        if (pkg == response) {
+            return
+        }
 
+        pkg = response
+
+        configsList.items.clear()
         val configs = pkg.files ?: mutableListOf()
         for (config in configs) {
-            configsListView.items.add(config)
+            configsList.items.add(config)
         }
     }
 

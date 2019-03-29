@@ -34,7 +34,7 @@ class FileService(userID: Int, password: String) : Service<File>(userID, passwor
         fileDao.delete(obj)
     }
 
-    override fun getAll(): List<File> {
+    override fun getAll(): List<File>? {
         return fileDao.all
     }
 }

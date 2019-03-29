@@ -147,18 +147,25 @@ class MainWindowController {
         filesTree.isEditable = true
 
         val filesByDir = HashMap<String, ArrayList<FileRow>>()
+        if (userFiles == null) {
+            val stage = rootAP.scene.window as Stage
+            stage.close()
+            return
+        }
         for (userFile in userFiles) {
-            val newRow = FileRow(
-                    listOf(userFile.id),
-                    userFile.name,
-                    userFile.created!!,
-                    userFile.modified!!,
-                    FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
-            )
-            if (filesByDir.containsKey(userFile.path)) {
-                filesByDir[userFile.path]!!.add(newRow)
-            } else {
-                filesByDir[userFile.path!!] = ArrayList(listOf(newRow))
+            if (userFile.`package`!!.id == Package.default().id) {
+                val newRow = FileRow(
+                        listOf(userFile.id),
+                        userFile.name,
+                        userFile.created!!,
+                        userFile.modified!!,
+                        FileUtil.fileIsDownloaded("${userFile.path}/${userFile.name}")
+                )
+                if (filesByDir.containsKey(userFile.path)) {
+                    filesByDir[userFile.path]!!.add(newRow)
+                } else {
+                    filesByDir[userFile.path!!] = ArrayList(listOf(newRow))
+                }
             }
         }
 
@@ -290,7 +297,12 @@ class MainWindowController {
         }
 
         val packagesByRepository = HashMap<String, ArrayList<PackageRow>>()
-        for (userPackage in userPackages!!) {
+        if (userPackages == null) {
+            val stage = rootAP.scene.window as Stage
+            stage.close()
+            return
+        }
+        for (userPackage in userPackages) {
             val newRow = PackageRow(
                     listOf(userPackage.id),
                     userPackage.name!!,
@@ -338,7 +350,7 @@ class MainWindowController {
     @Throws(Exception::class)
     fun addPackageClicked() {
         val repositoryService = RepositoryService(user.id, user.password)
-        if (repositoryService.find(2).manager == "no_manager") { // on fresh installation
+        if (repositoryService.find(2)!!.manager == "no_manager") { // on fresh installation
             repositoryService.update(Repository.default())
         }
 
