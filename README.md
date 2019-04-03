@@ -26,6 +26,10 @@ Features (work still in progress):
     - [ ] Repositories management tab
     - [ ] Settings
     - [ ] Custom design
+ - [ ] Under the hood
+    - [ ] Security
+        - [x] Login and registration through HTTPS (experimental)
+        - [ ] Database connection through TLS or SSL
 
 Roadmap ~~can~~ will be extended in the future.
     

@@ -38,15 +38,15 @@ class LoginFormController {
         }
     }
 
-    @Throws(Exception::class)
+    @Throws(LoginException::class)
     private fun logIn(): User {
         val resp = post(
-                "http://localhost:8080/login",
+                "https://127.0.0.1:8081/login",
                 data = mapOf(
                         "login" to loginField.text.trim { it <= ' ' },
                         "password" to passwordField.text.trim { it <= ' ' }
                 )
-        )
+        ) // TODO: fix checking of certificate or edit certificate
 
         val jsonObject = resp.jsonObject
         if (!(jsonObject["error"] as String).isEmpty()) {
@@ -128,16 +128,16 @@ class LoginFormController {
         }
     }
 
-    @Throws(Exception::class)
+    @Throws(RegisterException::class)
     private fun register(login: String, name: String, password: String) {
         val resp = post(
-                "http://localhost:8080/register",
+                "https://localhost:8081/register",
                 data = mapOf(
                         "login" to login.trim { it <= ' ' },
                         "name" to name.trim { it <= ' ' },
                         "password" to password.trim { it <= ' ' }
                 )
-        )
+        ) // TODO: fix checking of certificate or edit certificate
 
         val jsonObject = resp.jsonObject
         if (!(jsonObject["error"] as String).isEmpty()) {
