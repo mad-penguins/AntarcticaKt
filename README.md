@@ -29,7 +29,7 @@ Features (work still in progress):
  - [ ] Under the hood
     - [ ] Security
         - [x] Login and registration through HTTPS (experimental)
-        - [ ] Database connection through TLS or SSL
+        - [x] Database connection through TLS
 
 Roadmap ~~can~~ will be extended in the future.
     

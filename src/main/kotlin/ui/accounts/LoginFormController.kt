@@ -131,7 +131,7 @@ class LoginFormController {
     @Throws(RegisterException::class)
     private fun register(login: String, name: String, password: String) {
         val resp = post(
-                "https://localhost:8081/register",
+                "https://127.0.0.1:8081/register",
                 data = mapOf(
                         "login" to login.trim { it <= ' ' },
                         "name" to name.trim { it <= ' ' },
