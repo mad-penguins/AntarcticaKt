@@ -10,15 +10,23 @@ import java.util.*
 
 object SessionFactoryUtil {
     private var sessionFactory: SessionFactory? = null
+    private var useSSL = false // TODO: optionality of SSL/TLS connection is now a workaround because of difficulty of SSL/TLS database testing server setup
 
-    fun getSessionFactory(id: Int, password: String): SessionFactory? {
+    fun getSessionFactory(id: Int, password: String, useSSL: Boolean = this.useSSL): SessionFactory? {
         if (sessionFactory == null) {
             try {
                 val prop = Properties()
-                prop.setProperty("hibernate.connection.url", "jdbc:mysql://localhost:3306/id$id")
+                prop.setProperty(
+                        "hibernate.connection.url",
+                        "jdbc:mysql://localhost:3306/id$id${if (useSSL) "?useSSL=true" else ""}"
+                )
                 prop.setProperty("dialect", "org.hibernate.dialect.MariaDBDialect")
                 prop.setProperty("hibernate.connection.username", "id$id")
                 prop.setProperty("hibernate.connection.password", password)
+                if (useSSL) {
+                    prop.setProperty("hibernate.connection.verifyServerCertificate", "false") // TODO: delete this workaround when normally signed certificate will be present
+                    prop.setProperty("hibernate.connection.requireSSL", "true")
+                }
                 prop.setProperty("hibernate.connection.driver_class", "com.mysql.jdbc.Driver")
                 prop.setProperty("show_sql", true.toString())
 

@@ -1,7 +1,7 @@
 package ui.accounts
 
 import exceptions.LoginException
-import exceptions.RegisterException
+import exceptions.RegistrationException
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
@@ -14,8 +14,12 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import khttp.post
 import models.User
+import sun.security.validator.ValidatorException
 import ui.MainWindowController
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketException
+import javax.net.ssl.SSLHandshakeException
 
 class LoginFormController {
 
@@ -38,15 +42,33 @@ class LoginFormController {
         }
     }
 
-    @Throws(Exception::class)
+    @Throws(LoginException::class)
     private fun logIn(): User {
-        val resp = post(
-                "http://localhost:8080/login",
-                data = mapOf(
-                        "login" to loginField.text.trim { it <= ' ' },
-                        "password" to passwordField.text.trim { it <= ' ' }
-                )
+        val postData = mapOf(
+                "login" to loginField.text.trim { it <= ' ' },
+                "password" to passwordField.text.trim { it <= ' ' }
         )
+        val resp = try { // TODO: fix checking of certificate or edit certificate, current workaround is adding of client certificate into JRE keychain
+            post("https://127.0.0.1:8081/login", data = postData)
+        } catch (e: Exception) {
+            val temp = when (e) {
+                is SSLHandshakeException, is ValidatorException, is ConnectException, is SocketException -> { // something wrong with server HTTPS certificate
+                    val httpResponse = try {
+                        println("Couldn't connect through HTTPS, using HTTP")
+                        post("http://127.0.0.1:8080/login", data = postData)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                    httpResponse
+                }
+                else -> {
+                    e.printStackTrace()
+                    null
+                }
+            }
+            temp
+        } ?: throw LoginException(LoginException.Kind.CONNECTION_ERROR)
 
         val jsonObject = resp.jsonObject
         if (!(jsonObject["error"] as String).isEmpty()) {
@@ -79,8 +101,12 @@ class LoginFormController {
             id = response.id
         } catch (le: LoginException) {
             val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Wrong login data"
+            alert.title = "Error while logging in"
             when (le.kind) {
+                LoginException.Kind.CONNECTION_ERROR -> {
+                    alert.headerText = "Connection error"
+                    alert.contentText = "Cannot establish neither HTTPS nor HTTP connection to server.\nTry again later."
+                }
                 LoginException.Kind.WRONG_LOGIN -> {
                     alert.headerText = "Wrong login"
                     alert.contentText = "Please check your login."
@@ -91,19 +117,6 @@ class LoginFormController {
                 }
             }
             alert.showAndWait()
-        } catch (e: Exception) {
-            when (e) {
-                is java.net.ConnectException, is java.net.SocketException -> {
-                    val alert = Alert(Alert.AlertType.ERROR)
-                    alert.title = "Connection error"
-                    alert.headerText = "Connection error"
-                    alert.contentText = "There's a problem with your connection.\nPlease check your internet connection."
-                    alert.showAndWait()
-                } else -> {
-                    println("Some unknown unhandled exception:")
-                    e.printStackTrace()
-                }
-            }
         }
 
         if (id != -1) {
@@ -128,22 +141,39 @@ class LoginFormController {
         }
     }
 
-    @Throws(Exception::class)
+    @Throws(RegistrationException::class)
     private fun register(login: String, name: String, password: String) {
-        val resp = post(
-                "http://localhost:8080/register",
-                data = mapOf(
-                        "login" to login.trim { it <= ' ' },
-                        "name" to name.trim { it <= ' ' },
-                        "password" to password.trim { it <= ' ' }
-                )
+        val postData = mapOf(
+                "login" to login.trim { it <= ' ' },
+                "name" to name.trim { it <= ' ' },
+                "password" to password.trim { it <= ' ' }
         )
+
+        val resp = try { // TODO: fix checking of certificate or edit certificate, current workaround is adding of client certificate into JRE keychain
+            post("https://127.0.0.1:8081/register", data = postData)
+        } catch (e: Exception) {
+            val temp = when (e) {
+                is SSLHandshakeException, is ValidatorException -> { // something wrong with server HTTPS certificate
+                    val httpResponse = try {
+                        post("http://127.0.0.1:8080/register", data = postData)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                    httpResponse
+                }
+                else -> {
+                    e.printStackTrace()
+                    null
+                }
+            }
+            temp
+        } ?: throw RegistrationException(RegistrationException.Kind.CONNECTION_ERROR)
 
         val jsonObject = resp.jsonObject
         if (!(jsonObject["error"] as String).isEmpty()) {
-            if (Integer.parseInt(jsonObject["error"] as String) == -1) {
-                throw RegisterException()
-            }
+            if (Integer.parseInt(jsonObject["error"] as String) == -1)
+                throw RegistrationException(RegistrationException.Kind.ALREADY_REGISTERED)
         }
     }
 
@@ -169,11 +199,18 @@ class LoginFormController {
 
         try {
             register(login, name, password)
-        } catch (re: RegisterException) {
+        } catch (re: RegistrationException) {
             val alert = Alert(Alert.AlertType.ERROR)
             alert.title = "Error while registration"
-            if (re.kind == RegisterException.Kind.ALREADY_REGISTERED) {
-                alert.headerText = "User $name is already registered!"
+            when (re.kind) {
+                RegistrationException.Kind.CONNECTION_ERROR -> {
+                    alert.headerText = "Connection error"
+                    alert.contentText = "Cannot establish neither HTTPS nor HTTP connection to server.\nTry again later."
+                }
+                RegistrationException.Kind.ALREADY_REGISTERED -> {
+                    alert.headerText = "Already registered"
+                    alert.contentText = "User $name is already registered!"
+                }
             }
             alert.showAndWait()
         } catch (e: Exception) {
