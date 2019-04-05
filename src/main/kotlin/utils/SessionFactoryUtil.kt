@@ -10,7 +10,7 @@ import java.util.*
 
 object SessionFactoryUtil {
     private var sessionFactory: SessionFactory? = null
-    private var useSSL = false
+    private var useSSL = false // TODO: optionality of SSL/TLS connection is now a workaround because of difficulty of SSL/TLS database testing server setup
 
     fun getSessionFactory(id: Int, password: String, useSSL: Boolean = this.useSSL): SessionFactory? {
         if (sessionFactory == null) {
