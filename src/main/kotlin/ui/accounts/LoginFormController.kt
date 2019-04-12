@@ -49,13 +49,13 @@ class LoginFormController {
                 "password" to passwordField.text.trim { it <= ' ' }
         )
         val resp = try { // TODO: fix checking of certificate or edit certificate, current workaround is adding of client certificate into JRE keychain
-            post("https://127.0.0.1:8081/login", data = postData)
+            post("https://165.22.64.118:8081/login", data = postData)
         } catch (e: Exception) {
             val temp = when (e) {
                 is SSLHandshakeException, is ValidatorException, is ConnectException, is SocketException -> { // something wrong with server HTTPS certificate
                     val httpResponse = try {
                         println("Couldn't connect through HTTPS, using HTTP")
-                        post("http://127.0.0.1:8080/login", data = postData)
+                        post("http://165.22.64.118:8080/login", data = postData)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         null
@@ -150,12 +150,12 @@ class LoginFormController {
         )
 
         val resp = try { // TODO: fix checking of certificate or edit certificate, current workaround is adding of client certificate into JRE keychain
-            post("https://127.0.0.1:8081/register", data = postData)
+            post("https://165.22.64.118:8081/register", data = postData)
         } catch (e: Exception) {
             val temp = when (e) {
                 is SSLHandshakeException, is ValidatorException -> { // something wrong with server HTTPS certificate
                     val httpResponse = try {
-                        post("http://127.0.0.1:8080/register", data = postData)
+                        post("http://165.22.64.118:8080/register", data = postData)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         null

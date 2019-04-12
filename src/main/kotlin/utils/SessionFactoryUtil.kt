@@ -10,7 +10,7 @@ import java.util.*
 
 object SessionFactoryUtil {
     private var sessionFactory: SessionFactory? = null
-    private var useSSL = false // TODO: optionality of SSL/TLS connection is now a workaround because of difficulty of SSL/TLS database testing server setup
+    private var useSSL = true // TODO: optionality of SSL/TLS connection is now a workaround because of difficulty of SSL/TLS database testing server setup
 
     fun getSessionFactory(id: Int, password: String, useSSL: Boolean = this.useSSL): SessionFactory? {
         if (sessionFactory == null) {
@@ -18,9 +18,9 @@ object SessionFactoryUtil {
                 val prop = Properties()
                 prop.setProperty(
                         "hibernate.connection.url",
-                        "jdbc:mysql://localhost:3306/id$id${if (useSSL) "?useSSL=true" else ""}"
+                        "jdbc:mysql://165.22.64.118:3306/id$id${if (useSSL) "?useSSL=true" else ""}"
                 )
-                prop.setProperty("dialect", "org.hibernate.dialect.MariaDBDialect")
+                prop.setProperty("dialect", "org.hibernate.dialect.MySQLDialect")
                 prop.setProperty("hibernate.connection.username", "id$id")
                 prop.setProperty("hibernate.connection.password", password)
                 if (useSSL) {

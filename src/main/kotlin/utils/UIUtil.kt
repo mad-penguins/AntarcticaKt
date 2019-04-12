@@ -18,6 +18,9 @@ object UIUtil {
         alert.headerText = "Too much database activity"
         alert.contentText = "$error\n Try again later."
         alert.showAndWait()
+        println()
+        println(error)
+        println()
     }
 
     fun showInvalidPathAlert(path: String) {
