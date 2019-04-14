@@ -11,10 +11,10 @@ repositories {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile "org.hibernate:hibernate-core:5.4.2.Final"
     compile "mysql:mysql-connector-java:8.0.14"
-    implementation 'com.github.jkcclemens:khttp:0.1.0'
+    compile 'com.github.jkcclemens:khttp:0.1.0'
 }
 
 compileKotlin {
@@ -22,4 +22,11 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'MainKt'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }

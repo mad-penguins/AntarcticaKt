@@ -4,7 +4,7 @@ import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.stage.Stage
 
-class Main : Application() {
+class App : Application() {
 
     @Throws(Exception::class)
     override fun start(stage: Stage) {
@@ -18,10 +18,8 @@ class Main : Application() {
         stage.show()
     }
 
-    companion object {
-        @JvmStatic
-        fun main(args: Array<String>) {
-            Application.launch(Main::class.java)
-        }
-    }
+}
+
+fun main(args: Array<String>) {
+    Application.launch(App::class.java)
 }
