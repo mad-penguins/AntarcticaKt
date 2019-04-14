@@ -2,7 +2,12 @@
 Antarctica is an open-source project aiming to perform comfortable in-cloud backup
 of user files, installed packages list and dotfiles.
 
-![Files list](/screenshoots/files_table.jpg)
+[Download](https://github.com/dg-software/Antarctica/releases) (only unstable nightly builds yet).
+
+![Files list](/screenshots/files_table.jpg)
+![Packages list](/screenshots/packages_table.jpg)
+![Dotfiles manager](/screenshots/configs_manager.jpg)
+
 
 Features (work still in progress):
 - [x] Files management
@@ -37,6 +42,6 @@ Antarctica server is at the moment under development too. Code of server is clos
 
 You can support the development:
 - WebMoney: R710781308549
-- Yandex Money: https://money.yandex.ru/to/410015281707280
+- [Yandex Money](https://money.yandex.ru/to/410015281707280)
 
 Any suggestions and contributions are welcome. Let's make Linux much more user friendly!
