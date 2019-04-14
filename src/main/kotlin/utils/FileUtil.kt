@@ -13,13 +13,22 @@ import java.util.*
 
 object FileUtil {
 
+    private fun processPath(path: String) : String {
+        if (path.contains(System.getProperty("user.home"))) {
+            return path.replace(System.getProperty("user.home"), "~")
+        } else if (path.contains("~") && path.indexOfFirst {it == '~'} == 0) {
+            return path.replace("~", System.getProperty("user.home"))
+        }
+        return path
+    }
+
     fun fileIsDownloaded(path: String): Boolean {
-        return java.io.File(path).exists()
+        return java.io.File(processPath(path)).exists()
     }
 
     @Throws(IOException::class)
     fun downloadFile(obj: File) {
-        val file = java.io.File("${obj.path}/${obj.name}")
+        val file = java.io.File("${processPath(obj.path!!)}/${obj.name}")
         if (!file.exists()) {
             if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
                 return
@@ -39,13 +48,13 @@ object FileUtil {
     }
 
     fun deleteFile(obj: File) {
-        val file = java.io.File("${obj.path}/${obj.name}")
+        val file = java.io.File("${processPath(obj.path!!)}/${obj.name}")
         file.delete()
     }
 
     data class FileTimes(val created: FileTime, val modified: FileTime)
 
-    fun getFileTimes(file: java.io.File): FileTimes {
+    private fun getFileTimes(file: java.io.File): FileTimes {
         return FileTimes(
                 Files.readAttributes(
                         file.toPath(),
@@ -61,7 +70,7 @@ object FileUtil {
     @Throws(IOException::class)
     fun insertFileIntoDB(dirFile: java.io.File, path: String, pkg: Package, service: FileService): File {
         val name = path.substring(path.lastIndexOf('/') + 1)
-        val location = path.substring(0, path.lastIndexOf('/'))
+        val location = processPath(path.substring(0, path.lastIndexOf('/')))
 
         val content = Files.readAllBytes(dirFile.toPath())
 
