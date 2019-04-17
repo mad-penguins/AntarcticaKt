@@ -69,10 +69,13 @@ object PackageUtil {
         if (reposFile.exists()) {
             Files.lines(reposFile.toPath()).use { stream ->
                 stream.forEach { line ->
+                    // regexp for "deb url repo-version name"
                     val repoRegexp
-                            = Regex("^(deb|deb-src) ((?:http(s)?:\\\\/\\\\/)?[\\w.-]+(?:\\.[\\w\\\\.-]+)+[\\w\\-\\\\._~:\\\\/?#[\\\\]@!\\\\$&'\\\\(\\)\\\\*\\\\+,;=.]+) (\\w+) (\\w+)$")
+                            = Regex("^(deb|deb-src) (https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,}) ([a-zA-Z]\\w*) ([a-zA-Z]\\w*)$")
                     if (repoRegexp.matches(line)) {
                         print(repoRegexp.matchEntire(line)!!.toString())
+                        val matchGroups = repoRegexp.matchEntire(line)!!.groupValues
+                        result.add(Repository(0, name = matchGroups[4], url = matchGroups[2], manager = "apt"))
                     }
                 }
             }
@@ -81,8 +84,7 @@ object PackageUtil {
         return result
     }
 
-    // zypper only now :(
-    val reposList: List<Repository> // TODO: add support of apt, dnf and pacman support
+    val reposList: List<Repository> // TODO: add support of dnf and pacman support
         @Throws(Exception::class)
         get() {
             return when (packageManagerName) {
@@ -92,6 +94,7 @@ object PackageUtil {
             }
         }
 
+    // TODO
     fun installPackage(pkg: Package) {
 
     }
