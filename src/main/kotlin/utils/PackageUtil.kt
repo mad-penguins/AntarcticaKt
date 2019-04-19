@@ -6,8 +6,23 @@ import java.io.File
 import java.nio.file.Files
 import java.util.*
 
+
+enum class PackageManager(s: String) {
+    NO_MANAGER(""), APT("apt"), ZYPPER("zypper"), DNF("dnf"), PACMAN("pacman");
+
+    override fun toString(): String {
+        return when (this) {
+            NO_MANAGER -> ""
+            APT -> "apt"
+            ZYPPER -> "zypper"
+            DNF -> "dnf"
+            PACMAN -> "pacman"
+        }
+    }
+}
+
 object PackageUtil {
-    val packageManagerName: String
+    val packageManager: PackageManager
         get() {
             val proc = Runtime.getRuntime().exec(arrayOf("/bin/sh", "-c", "cat /etc/*-release"))
             val reader = proc.inputStream.bufferedReader()
@@ -15,15 +30,15 @@ object PackageUtil {
             for (line in reader.lines()) {
                 val regex = Regex("ID_LIKE=(\\\")?([a-zA-Z0-9_ ]*)(\\\")?")
                 if (regex.matches(line!!)) {
-                    val result = regex.matchEntire(line!!)!!.value.decapitalize()
+                    val result = regex.matchEntire(line)!!.value.decapitalize()
                     return when {
                         result.contains("suse") -> {
                             println("Running SUSE")
-                            "zypper"
+                            PackageManager.ZYPPER
                         }
                         result.contains("debian") -> {
                             println("running Debian")
-                            "apt"
+                            PackageManager.APT
                         }
                         else -> throw Exception("Unknown distro")
                     }
@@ -32,6 +47,41 @@ object PackageUtil {
             throw Exception("Unknown distro")
         }
 
+
+    // repositories management wrapper
+
+    val reposList: List<Repository>
+        get() {
+            return when (packageManager) {
+                PackageManager.APT -> getAptReposList()
+                PackageManager.ZYPPER -> getZypperReposList()
+                PackageManager.DNF -> TODO()
+                PackageManager.PACMAN -> TODO()
+                else -> throw Exception("")
+            }
+        }
+
+    private fun getAptReposList() : ArrayList<Repository> {
+        val result = ArrayList<Repository>()
+        val reposFile = File("/etc/apt/sources.list")
+        if (reposFile.exists()) {
+            Files.lines(reposFile.toPath()).use { stream ->
+                stream.forEach { line ->
+                    // regexp for "deb url repo-version name"
+                    val repoRegexp
+                            = Regex("^(deb|deb-src) (https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,}) ([a-zA-Z]\\w*) ([a-zA-Z]\\w*)\$")
+                    if (repoRegexp.matches(line)) {
+                        println(repoRegexp.matchEntire(line)!!.value.toString())
+                        val matchGroups = repoRegexp.matchEntire(line)!!.groupValues
+                        result.add(Repository(0, name = matchGroups[4], url = matchGroups[2], manager = PackageManager.APT.toString()))
+                    }
+                }
+            }
+        }
+
+        return result
+    }
+
     private fun getZypperReposList() : ArrayList<Repository> {
         val result = ArrayList<Repository>()
         val reposDir = File("/etc/zypp/repos.d")
@@ -39,7 +89,7 @@ object PackageUtil {
             if (reposDir.isDirectory) {
                 for (repo in reposDir.listFiles()) {
                     val tempRepo = Repository(0)
-                    tempRepo.manager = "zypper"
+                    tempRepo.manager = PackageManager.ZYPPER.toString()
                     if (repo.isFile) {
                         Files.lines(repo.toPath()).use { stream ->
                             stream.forEach { line ->
@@ -62,40 +112,25 @@ object PackageUtil {
         return result
     }
 
-    // TODO
-    private fun getAptReposList() : ArrayList<Repository> {
-        val result = ArrayList<Repository>()
-        val reposFile = File("/etc/apt/sources.list")
-        if (reposFile.exists()) {
-            Files.lines(reposFile.toPath()).use { stream ->
-                stream.forEach { line ->
-                    // regexp for "deb url repo-version name"
-                    val repoRegexp
-                            = Regex("^(deb|deb-src) (https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,}) ([a-zA-Z]\\w*) ([a-zA-Z]\\w*)$")
-                    if (repoRegexp.matches(line)) {
-                        print(repoRegexp.matchEntire(line)!!.toString())
-                        val matchGroups = repoRegexp.matchEntire(line)!!.groupValues
-                        result.add(Repository(0, name = matchGroups[4], url = matchGroups[2], manager = "apt"))
-                    }
-                }
-            }
-        }
 
-        return result
+    // packages management wrapper
+
+    fun installPackage(pkg: Package) {
+        println("trying to install")
+        when (packageManager) {
+            PackageManager.APT -> installAptPackage(pkg)
+            PackageManager.ZYPPER -> installZypperPackage(pkg)
+            PackageManager.DNF -> TODO()
+            PackageManager.PACMAN -> TODO()
+            else -> throw Exception("")
+        }
     }
 
-    val reposList: List<Repository> // TODO: add support of dnf and pacman support
-        @Throws(Exception::class)
-        get() {
-            return when (packageManagerName) {
-                "zypper" -> getZypperReposList()
-                "apt" -> getAptReposList()
-                else -> throw Exception("unsupported package manager")
-            }
-        }
+    private fun installAptPackage(pkg: Package) {
+        TODO("not implemented")
+    }
 
-    // TODO
-    fun installPackage(pkg: Package) {
-
+    private fun installZypperPackage(pkg: Package) {
+        TODO("not implemented")
     }
 }
