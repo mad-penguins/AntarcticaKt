@@ -61,50 +61,62 @@ object PackageUtil {
             }
         }
 
+    // still TODO
     private fun getAptReposList() : ArrayList<Repository> {
         val result = ArrayList<Repository>()
-        val reposFile = File("/etc/apt/sources.list")
-        if (reposFile.exists()) {
-            Files.lines(reposFile.toPath()).use { stream ->
-                stream.forEach { line ->
-                    // regexp for "deb url repo-version name"
-                    val repoRegexp
-                            = Regex("^(deb|deb-src) (https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,}) ([a-zA-Z]\\w*) ([a-zA-Z]\\w*)\$")
-                    if (repoRegexp.matches(line)) {
-                        println(repoRegexp.matchEntire(line)!!.value.toString())
-                        val matchGroups = repoRegexp.matchEntire(line)!!.groupValues
-                        result.add(Repository(0, name = matchGroups[4], url = matchGroups[2], manager = PackageManager.APT.toString()))
+
+        val reposDir = File("/etc/apt/sources.list.d") // only PPAs because default repos'll be always present
+        if (reposDir.exists() && reposDir.isDirectory) {
+            for (repo in reposDir.listFiles()) {
+                val tempRepo = Repository(0)
+                tempRepo.manager = PackageManager.APT.toString()
+                if (repo.isFile && !repo.path.contains(".save")) {
+                    Files.lines(repo.toPath()).use { stream ->
+                        stream.forEach { line ->
+                            // regexp for "deb [arch] url repo-version name"
+                            val repoRegexp =
+                                Regex("^deb ?(\\[arch=(amd64|i386|i686)\\])? (https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,}) ([a-zA-Z0-9_-]*) ([a-zA-Z0-9_-]*)\$")
+                            if (repoRegexp.matches(line)) {
+                                println(repoRegexp.matchEntire(line)!!.value)
+                                val matchGroups = repoRegexp.matchEntire(line)!!.groupValues
+                                result.add(
+                                    Repository(
+                                        0,
+                                        name = "${repo.name.substring(0, repo.name.lastIndexOf(".list"))}#${matchGroups[5]}#${matchGroups[6]}",
+                                        url = matchGroups[4],
+                                        manager = PackageManager.APT.toString()
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
-
         return result
     }
 
     private fun getZypperReposList() : ArrayList<Repository> {
         val result = ArrayList<Repository>()
         val reposDir = File("/etc/zypp/repos.d")
-        if (reposDir.exists()) {
-            if (reposDir.isDirectory) {
-                for (repo in reposDir.listFiles()) {
-                    val tempRepo = Repository(0)
-                    tempRepo.manager = PackageManager.ZYPPER.toString()
-                    if (repo.isFile) {
-                        Files.lines(repo.toPath()).use { stream ->
-                            stream.forEach { line ->
-                                if (line.contains("name")) {
-                                    tempRepo.name = line.substring(line.lastIndexOf('=') + 1).trim { it <= ' ' }
-                                }
-                                if (line.contains("baseurl")) {
-                                    tempRepo.url = line.substring(line.lastIndexOf('=') + 1).trim { it <= ' ' }
-                                }
+        if (reposDir.exists() && reposDir.isDirectory) {
+            for (repo in reposDir.listFiles()) {
+                val tempRepo = Repository(0)
+                tempRepo.manager = PackageManager.ZYPPER.toString()
+                if (repo.isFile) {
+                    Files.lines(repo.toPath()).use { stream ->
+                        stream.forEach { line ->
+                            if (line.contains("name")) {
+                                tempRepo.name = line.substring(line.lastIndexOf('=') + 1).trim { it <= ' ' }
+                            }
+                            if (line.contains("baseurl")) {
+                                tempRepo.url = line.substring(line.lastIndexOf('=') + 1).trim { it <= ' ' }
                             }
                         }
+                    }
 
-                        if (!tempRepo.name.isEmpty() && !tempRepo.url.isEmpty()) {
-                            result.add(tempRepo)
-                        }
+                    if (!tempRepo.name.isEmpty() && !tempRepo.url.isEmpty()) {
+                        result.add(tempRepo)
                     }
                 }
             }
